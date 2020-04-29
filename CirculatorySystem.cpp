@@ -27,11 +27,6 @@ int randomTime(int a, int b) {		//zwraca liczbe calkowita losowa z przedzialu [a
 
 void initColors() {					//inicjalizuje pary kolorow
 	init_pair(DEFAULT_COLOR, COLOR_WHITE, COLOR_BLACK);
-	for (int i = 1; i < 8; ++i)
-		init_pair(i, 0, i);
-	init_pair(EATING_COLOR, COLOR_GREEN, COLOR_BLACK);
-	init_pair(SLEEPING_COLOR, COLOR_CYAN, COLOR_BLACK);
-	init_pair(THINKING_COLOR, COLOR_MAGENTA, COLOR_BLACK);
 }
 
 /* wClearLine, mvwprintw, mvwaddch synchronizowane przez blokowanie mutex printMtx */
