@@ -68,7 +68,10 @@ int main(int argc, char* argv[])
 
 	initColors();
 
-
+	while (getch() != ESC) {
+		refresh();
+		this_thread::sleep_for(chrono::milliseconds{50});
+	}
 
 	endwin();
 
