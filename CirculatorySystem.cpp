@@ -55,7 +55,79 @@ void synch_mvwaddch(WINDOW* win, int line, int col, char ch) {
 }
 /* synchronizowane wClearLine, mvwprintw, mvwaddch koniec */
 
+/* tlen */
+class Oxygen {
+	mutex mtx;
+};
+/* koniec tlen */
 
+/* zyla */
+class Vein {
+	mutex entranceMtx;
+
+	Vein();		// TODO: implement
+	~Vein();	// TODO: implement
+};
+/* koniec zyla */
+
+/* pluca */
+class Lungs {
+	WINDOW* win = nullptr;
+	int capacity;	// maksymalna liczba jednostek tlenu
+
+	Lungs();		// TODO: implement
+	~Lungs();		// TODO: implement
+	void inhale();	// TODO: implement
+	void exhale();	// TODO: implement
+	void operator()();		// TODO: implement
+};
+
+Lungs::Lungs() {
+	// TODO: create window
+	// win = newwin();
+	// box(win, 0, 0);
+}
+
+Lungs::~Lungs() {
+	delwin(win);
+}
+
+Lungs::operator()() {
+	// TODO: implement breathing cycle
+}
+
+Lungs::inhale() {
+	// TODO: implement
+}
+
+Lungs::exhale() {
+	// TODO: implement
+}
+/* koniec pluca */
+
+/* erytrocyt */
+class Erythrocyte {
+	int x, y;
+
+	Erythrocyte();		// TODO: implement
+	~Erythrocyte();		// TODO: implement
+	bool takeOxygen();	// TODO: implement
+	bool giveOxygen();	// TODO: implement
+	void operator()();	// TODO: implement
+};
+/* koniec erytrocyt */
+
+/* komorka */
+class Cell {
+	WINDOW* win = nullptr;
+
+	Cell();					// TODO: implement
+	~Cell();				// TODO: implement
+	void waitForOxygen();	// TODO: implement
+	void processOxygen();	// TODO: implement
+	void operator()();		// TODO: implement
+};
+/* koniec komorka*/
 
 int main(int argc, char* argv[])
 {
