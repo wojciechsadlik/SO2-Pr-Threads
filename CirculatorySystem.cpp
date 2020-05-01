@@ -2,19 +2,30 @@
 #include <stdio.h>
 #include <thread>
 #include <mutex>
+#include <atomic>
+#include <memory>
 #include <chrono>
 #include <random>
+#include <vector>
 using namespace std;
 
 const int ESC = 27;
 
-const int WIN_LINES = 8;
-const int WIN_COLS = 20;
+const int TERM_LINES = 24;
+const int TERM_COLS = 80;
 
-const int DEFAULT_COLOR = 0;
+enum Color	{DEFAULT,
+			INHALE,
+			EXHALE,
+			OXYGEN,
+			ERYTHROCYTE_O,
+			ERYTHROCYTE_NO};
 
 const int TASK_TIME_LB = 2500;
 const int TASK_TIME_UB = 3500;
+
+mutex endThreadsMtx;
+bool endThreads = false;
 
 mutex printMtx;		//do synchronizacji pisania na ekran
 
@@ -26,11 +37,16 @@ int randomTime(int a, int b) {		//zwraca liczbe calkowita losowa z przedzialu [a
 }
 
 void initColors() {					//inicjalizuje pary kolorow
-	init_pair(DEFAULT_COLOR, COLOR_WHITE, COLOR_BLACK);
+	init_pair(Color::DEFAULT, COLOR_WHITE, COLOR_BLACK);
+	init_pair(Color::INHALE, COLOR_BLUE, COLOR_BLACK);
+	init_pair(Color::EXHALE, COLOR_RED, COLOR_BLACK);
+	init_pair(Color::OXYGEN, COLOR_WHITE, COLOR_CYAN);
+	init_pair(Color::ERYTHROCYTE_O, COLOR_WHITE, COLOR_MAGENTA);
+	init_pair(Color::ERYTHROCYTE_NO, COLOR_WHITE, COLOR_RED);
 }
 
 /* wClearLine, mvwprintw, mvwaddch synchronizowane przez blokowanie mutex printMtx */
-void synch_wClearLine(WINDOW* win, int line, int start = 1, int stop = WIN_COLS - 1) {
+void synch_wClearLine(WINDOW* win, int line, int start, int stop) {
 	lock_guard<mutex> lck {printMtx};
 	for (int i = start; i < stop; ++i) {
 		mvwaddch(win, line, i, ' ');
@@ -49,11 +65,34 @@ void synch_mvwprintw(WINDOW* win, int line, int col, int color, const char* fmt,
 	wattroff(win, COLOR_PAIR(color));
 }
 
+void synch_mvwprintw(WINDOW* win, int line, int col, const char* fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	char buffer[30];
+	vsnprintf(buffer, 30, fmt, args);
+
+	lock_guard<mutex> lck {printMtx};
+	mvwprintw(win, line, col, buffer);
+}
+
 void synch_mvwaddch(WINDOW* win, int line, int col, char ch) {
 	lock_guard<mutex> lck {printMtx};
 	mvwaddch(win, line, col, ch);
 }
+
+void synch_mvwaddch(WINDOW* win, int line, int col, int color, char ch) {
+	lock_guard<mutex> lck {printMtx};
+	wattron(win, COLOR_PAIR(color));
+	mvwaddch(win, line, col, ch);
+	wattroff(win, COLOR_PAIR(color));
+}
 /* synchronizowane wClearLine, mvwprintw, mvwaddch koniec */
+
+/* mapa */
+class SystemMap {
+
+};
+/* koniec mapa */
 
 /* tlen */
 class Oxygen {
@@ -64,62 +103,152 @@ class Oxygen {
 /* zyla */
 class Vein {
 	mutex entranceMtx;
+	vector<char> directions;
 
+public:
 	Vein();		// TODO: implement
 	~Vein();	// TODO: implement
 };
+
+Vein::Vein() {
+
+}
+
+Vein::~Vein() {
+
+}
 /* koniec zyla */
+
+/* "skrzyzowanie" zyl*/
+class Crossroad {
+	Vein* vIn;
+	vector<Vein*> vOuts;
+};
+/* koniec "skrzyzowanie" zyl */
 
 /* pluca */
 class Lungs {
+	const int WIN_LINES = 6;
+	const int WIN_COLS = 17;
 	WINDOW* win = nullptr;
-	int capacity;	// maksymalna liczba jednostek tlenu
+	vector<unique_ptr<Oxygen>> oxygen;
+	size_t capacity = 17;	// maksymalna liczba jednostek tlenu
+	Vein* vIn, vOut;
 
+public:
 	Lungs();		// TODO: implement
 	~Lungs();		// TODO: implement
 	void inhale();	// TODO: implement
 	void exhale();	// TODO: implement
 	void operator()();		// TODO: implement
+	void drawOxygen();
+	void refresh();
 };
 
 Lungs::Lungs() {
-	// TODO: create window
-	// win = newwin();
-	// box(win, 0, 0);
+	int col = TERM_COLS / 2 - WIN_COLS / 2;
+	int line = 2;
+	win = newwin(WIN_LINES, WIN_COLS, line, col);
+	box(win, 0, 0);
+	mvwprintw(win, 0, 0, "Lungs");
 }
 
 Lungs::~Lungs() {
 	delwin(win);
 }
 
-Lungs::operator()() {
-	// TODO: implement breathing cycle
+void Lungs::operator()() {
+	while (true) {
+		inhale();
+		exhale();
+		{
+			lock_guard<mutex> lck {endThreadsMtx};
+			if (endThreads) break;
+		}	
+	}
+	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
+	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
+	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "ended");
+	this->refresh();
 }
 
-Lungs::inhale() {
-	// TODO: implement
+void Lungs::inhale() {
+	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
+	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
+	synch_mvwprintw(win, 1, 1, Color::INHALE, "inhale");
+	chrono::milliseconds taskTime {randomTime(TASK_TIME_LB, TASK_TIME_UB)};		//czas snu - [2.5s, 3.5s]
+	for (int i = 1; i < WIN_COLS - 1; ++i) {					//pasek postepu
+		if (oxygen.size() < capacity)
+			oxygen.push_back(unique_ptr<Oxygen> {new Oxygen()});
+		synch_mvwaddch(win, 2, i, '*');
+		this_thread::sleep_for(taskTime / WIN_COLS);
+	}
 }
 
-Lungs::exhale() {
-	// TODO: implement
+void Lungs::exhale() {
+	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
+	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
+	synch_mvwprintw(win, 1, 1, Color::EXHALE, "exhale");
+	chrono::milliseconds taskTime {randomTime(TASK_TIME_LB, TASK_TIME_UB)};		//czas snu - [2.5s, 3.5s]
+	for (int i = 1; i < WIN_COLS - 1; ++i) {					//pasek postepu
+		if (oxygen.size() > 0)
+			oxygen.pop_back();
+		synch_mvwaddch(win, 2, i, '*');
+		this_thread::sleep_for(taskTime / WIN_COLS);
+	}
+}
+
+void Lungs::drawOxygen() {
+	synch_wClearLine(win, 3, 1, WIN_COLS - 1);
+	synch_wClearLine(win, 4, 1, WIN_COLS - 1);
+
+	for (size_t i = 0; i < oxygen.size(); i++) {
+		synch_mvwaddch(win, 3 + i / (WIN_COLS - 1), 1 + i % (WIN_COLS - 1), Color::OXYGEN, ' ');
+	}
+}
+
+void Lungs::refresh() {
+	drawOxygen();
+	wrefresh(win);
 }
 /* koniec pluca */
 
 /* erytrocyt */
 class Erythrocyte {
+	int id;
 	int x, y;
+	Vein* vein = nullptr;
+	Oxygen* oxygen = nullptr;
 
 	Erythrocyte();		// TODO: implement
 	~Erythrocyte();		// TODO: implement
 	bool takeOxygen();	// TODO: implement
 	bool giveOxygen();	// TODO: implement
+	void move();
 	void operator()();	// TODO: implement
+	void draw();
 };
+
+Erythrocyte::Erythrocyte() {
+
+}
+
+Erythrocyte::~Erythrocyte() {
+	
+}
+
+void Erythrocyte::draw() {
+	if (oxygen == nullptr)
+		synch_mvwprintw(stdscr, y, x, Color::ERYTHROCYTE_NO, "%02d", id);
+	else
+		synch_mvwprintw(stdscr, y, x, Color::ERYTHROCYTE_O, "%02d", id);
+}
 /* koniec erytrocyt */
 
 /* komorka */
 class Cell {
 	WINDOW* win = nullptr;
+	Vein* vIn, vOut;
 
 	Cell();					// TODO: implement
 	~Cell();				// TODO: implement
@@ -128,7 +257,7 @@ class Cell {
 	void operator()();		// TODO: implement
 };
 /* koniec komorka*/
-
+ 
 int main(int argc, char* argv[])
 {
 	initscr();						//inicjalizacja terminala curses
@@ -140,10 +269,25 @@ int main(int argc, char* argv[])
 
 	initColors();
 
+	refresh();
+
+	Lungs lungs;
+	thread lungsT(ref(lungs));
+ 
 	while (getch() != ESC) {
 		refresh();
+		lungs.refresh();
 		this_thread::sleep_for(chrono::milliseconds{50});
 	}
+
+	{
+		lock_guard<mutex> lck {endThreadsMtx};
+		endThreads = true;
+	}
+
+	lungsT.join();
+
+	this_thread::sleep_for(chrono::seconds{1});
 
 	endwin();
 
