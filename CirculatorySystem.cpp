@@ -94,6 +94,22 @@ class SystemMap {
 };
 /* koniec mapa */
 
+// /* krwinka */
+// class BloodCell {
+// protected:
+// 	bool oxygenCarrier = false;
+// public:
+// 	bool isOxygenCarrier() { return oxygenCarrier; };
+// };
+// /* koniec krwinka */
+class Erythrocyte;
+/* cel */
+class Destination {
+public:
+	virtual void interact(Erythrocyte& bloodCell) = 0;
+};
+/* koniec cel */
+
 /* tlen */
 class Oxygen {
 	mutex mtx;
@@ -102,47 +118,131 @@ class Oxygen {
 
 /* zyla */
 class Vein {
-	mutex entranceMtx;
+	int startX, startY;
 	vector<char> directions;
 
 public:
-	Vein();		// TODO: implement
-	~Vein();	// TODO: implement
+	mutex accessMtx;
+	Vein(int startX, int startY, vector<char>& directions);
+	~Vein() = default;
+	vector<char>::iterator getIterator();
+	char getDirection(int i);
 };
 
-Vein::Vein() {
-
+Vein::Vein(int startX, int startY, vector<char>& directions): 
+startX(startX), startY(startY), directions(directions) {
 }
 
-Vein::~Vein() {
+vector<char>::iterator Vein::getIterator() {
+	return directions.begin();
+}
 
+char Vein::getDirection(int i) {
+	if ((size_t) i < directions.size()) return directions[i];
+	else return 'x';
 }
 /* koniec zyla */
 
-/* "skrzyzowanie" zyl*/
-class Crossroad {
+/* rozwidlenie zyl*/
+class Fork {
 	Vein* vIn;
 	vector<Vein*> vOuts;
 };
-/* koniec "skrzyzowanie" zyl */
+/* koniec rozwidlenie zyl */
+
+/* serce */
+class Heart : public Destination {
+	Vein* leftVIn, rightVIn, leftVOut, rightVOut;
+
+public:
+	Heart();
+	~Heart();
+	void operator()();
+};
+/* koniec serce */
+
+/* erytrocyt */
+class Erythrocyte {
+	int id;
+	int x, y;
+	Vein* vein = nullptr;
+	Oxygen* oxygen = nullptr;
+	Destination* destination = nullptr;
+	int nextDirection = 0;
+
+public:
+	Erythrocyte();		// TODO: implement
+	~Erythrocyte();		// TODO: implement
+	bool takeOxygen();	// TODO: implement
+	bool giveOxygen();	// TODO: implement
+	void move();
+	void operator()();	// TODO: implement
+	void draw();
+	bool isOxygenCarrier() {return true;};
+};
+
+Erythrocyte::Erythrocyte() {
+}
+
+Erythrocyte::~Erythrocyte() {
+	
+}
+
+void Erythrocyte::move() {
+	if (vein != nullptr) {
+		char c = '?';
+		{
+			lock_guard<mutex> lck {vein->accessMtx};
+			c = vein->getDirection(nextDirection);
+		}
+
+		switch (c) {
+			case 'u': ++y; break;
+			case 'd': --y; break;
+			case 'r': ++x; break;
+			case 'l': --x; break;
+			case 'x': destination->interact(*this); nextDirection = -1;
+		}
+		++nextDirection;
+	}
+}
+
+void Erythrocyte::operator()() {
+	while (true) {
+		move();
+		{
+			lock_guard<mutex> lck {endThreadsMtx};
+			if (endThreads) break;
+		}	
+	}	
+}
+
+void Erythrocyte::draw() {
+	if (oxygen == nullptr)
+		synch_mvwprintw(stdscr, y, x, Color::ERYTHROCYTE_NO, "%02d", id);
+	else
+		synch_mvwprintw(stdscr, y, x, Color::ERYTHROCYTE_O, "%02d", id);
+}
+/* koniec erytrocyt */
 
 /* pluca */
-class Lungs {
+class Lungs : public Destination{
 	const int WIN_LINES = 6;
 	const int WIN_COLS = 17;
 	WINDOW* win = nullptr;
 	vector<unique_ptr<Oxygen>> oxygen;
 	size_t capacity = 17;	// maksymalna liczba jednostek tlenu
-	Vein* vIn, vOut;
+	//Vein* vIn, vOut;
 
 public:
-	Lungs();		// TODO: implement
-	~Lungs();		// TODO: implement
-	void inhale();	// TODO: implement
-	void exhale();	// TODO: implement
-	void operator()();		// TODO: implement
+	Lungs();
+	~Lungs();
+	void inhale();
+	void exhale();
+	void operator()();
 	void drawOxygen();
 	void refresh();
+	void interact(Erythrocyte& bloodCell);
 };
 
 Lungs::Lungs() {
@@ -207,46 +307,22 @@ void Lungs::drawOxygen() {
 	}
 }
 
+void Lungs::interact(Erythrocyte& bloodCell) {
+	if (bloodCell.isOxygenCarrier()) {
+		printw("aaa");
+	}
+	printw("bbb");
+	refresh();
+}
+
 void Lungs::refresh() {
 	drawOxygen();
 	wrefresh(win);
 }
 /* koniec pluca */
 
-/* erytrocyt */
-class Erythrocyte {
-	int id;
-	int x, y;
-	Vein* vein = nullptr;
-	Oxygen* oxygen = nullptr;
-
-	Erythrocyte();		// TODO: implement
-	~Erythrocyte();		// TODO: implement
-	bool takeOxygen();	// TODO: implement
-	bool giveOxygen();	// TODO: implement
-	void move();
-	void operator()();	// TODO: implement
-	void draw();
-};
-
-Erythrocyte::Erythrocyte() {
-
-}
-
-Erythrocyte::~Erythrocyte() {
-	
-}
-
-void Erythrocyte::draw() {
-	if (oxygen == nullptr)
-		synch_mvwprintw(stdscr, y, x, Color::ERYTHROCYTE_NO, "%02d", id);
-	else
-		synch_mvwprintw(stdscr, y, x, Color::ERYTHROCYTE_O, "%02d", id);
-}
-/* koniec erytrocyt */
-
 /* komorka */
-class Cell {
+class Cell: public Destination {
 	WINDOW* win = nullptr;
 	Vein* vIn, vOut;
 
@@ -272,6 +348,8 @@ int main(int argc, char* argv[])
 	refresh();
 
 	Lungs lungs;
+	Erythrocyte er;
+	lungs.interact(er);
 	thread lungsT(ref(lungs));
  
 	while (getch() != ESC) {
