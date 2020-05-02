@@ -94,19 +94,11 @@ class SystemMap {
 };
 /* koniec mapa */
 
-// /* krwinka */
-// class BloodCell {
-// protected:
-// 	bool oxygenCarrier = false;
-// public:
-// 	bool isOxygenCarrier() { return oxygenCarrier; };
-// };
-// /* koniec krwinka */
 class Erythrocyte;
 /* cel */
 class Destination {
 public:
-	virtual void interact(Erythrocyte& bloodCell) = 0;
+	virtual void interact(Erythrocyte& erythrocyte) = 0;
 };
 /* koniec cel */
 
@@ -165,20 +157,19 @@ public:
 class Erythrocyte {
 	int id;
 	int x, y;
-	Vein* vein = nullptr;
-	Oxygen* oxygen = nullptr;
-	Destination* destination = nullptr;
-	int nextDirection = 0;
+	Vein* vein {nullptr};
+	unique_ptr<Oxygen> oxygen {nullptr};
+	Destination* destination {nullptr};
+	int nextDirection {0};
 
 public:
 	Erythrocyte();		// TODO: implement
 	~Erythrocyte();		// TODO: implement
-	bool takeOxygen();	// TODO: implement
-	bool giveOxygen();	// TODO: implement
+	void takeOxygen(unique_ptr<Oxygen> oxygen);	// TODO: implement
+	void giveOxygen();	// TODO: implement
 	void move();
-	void operator()();	// TODO: implement
+	void operator()();
 	void draw();
-	bool isOxygenCarrier() {return true;};
 };
 
 Erythrocyte::Erythrocyte() {
@@ -186,6 +177,10 @@ Erythrocyte::Erythrocyte() {
 
 Erythrocyte::~Erythrocyte() {
 	
+}
+
+void Erythrocyte::takeOxygen(unique_ptr<Oxygen> oxygen) {
+	this->oxygen = std::move(oxygen);
 }
 
 void Erythrocyte::move() {
@@ -227,11 +222,11 @@ void Erythrocyte::draw() {
 
 /* pluca */
 class Lungs : public Destination{
-	const int WIN_LINES = 6;
-	const int WIN_COLS = 17;
-	WINDOW* win = nullptr;
+	const int WIN_LINES {6};
+	const int WIN_COLS {17};
+	WINDOW* win {nullptr};
 	vector<unique_ptr<Oxygen>> oxygen;
-	size_t capacity = 17;	// maksymalna liczba jednostek tlenu
+	size_t capacity {17};	// maksymalna liczba jednostek tlenu
 	//Vein* vIn, vOut;
 
 public:
@@ -242,7 +237,7 @@ public:
 	void operator()();
 	void drawOxygen();
 	void refresh();
-	void interact(Erythrocyte& bloodCell);
+	void interact(Erythrocyte& erythrocyte);
 };
 
 Lungs::Lungs() {
@@ -307,12 +302,11 @@ void Lungs::drawOxygen() {
 	}
 }
 
-void Lungs::interact(Erythrocyte& bloodCell) {
-	if (bloodCell.isOxygenCarrier()) {
-		printw("aaa");
+void Lungs::interact(Erythrocyte& erythrocyte) {
+	if (oxygen.size() > 0) {
+		erythrocyte.takeOxygen(std::move(oxygen.back()));
+		oxygen.pop_back();
 	}
-	printw("bbb");
-	refresh();
 }
 
 void Lungs::refresh() {
