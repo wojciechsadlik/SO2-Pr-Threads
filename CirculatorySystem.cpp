@@ -226,6 +226,7 @@ class Lungs : public Destination{
 	const int WIN_COLS {17};
 	WINDOW* win {nullptr};
 	vector<unique_ptr<Oxygen>> oxygen;
+	mutex oxygenMtx;
 	size_t capacity {17};	// maksymalna liczba jednostek tlenu
 	//Vein* vIn, vOut;
 
@@ -273,8 +274,11 @@ void Lungs::inhale() {
 	synch_mvwprintw(win, 1, 1, Color::INHALE, "inhale");
 	chrono::milliseconds taskTime {randomTime(TASK_TIME_LB, TASK_TIME_UB)};		//czas snu - [2.5s, 3.5s]
 	for (int i = 1; i < WIN_COLS - 1; ++i) {					//pasek postepu
-		if (oxygen.size() < capacity)
-			oxygen.push_back(unique_ptr<Oxygen> {new Oxygen()});
+		{
+			lock_guard<mutex> lck {oxygenMtx};
+			if (oxygen.size() < capacity)
+				oxygen.push_back(unique_ptr<Oxygen> {new Oxygen()});
+		}
 		synch_mvwaddch(win, 2, i, '*');
 		this_thread::sleep_for(taskTime / WIN_COLS);
 	}
@@ -286,8 +290,11 @@ void Lungs::exhale() {
 	synch_mvwprintw(win, 1, 1, Color::EXHALE, "exhale");
 	chrono::milliseconds taskTime {randomTime(TASK_TIME_LB, TASK_TIME_UB)};		//czas snu - [2.5s, 3.5s]
 	for (int i = 1; i < WIN_COLS - 1; ++i) {					//pasek postepu
-		if (oxygen.size() > 0)
-			oxygen.pop_back();
+		{
+			lock_guard<mutex> lck {oxygenMtx};
+			if (oxygen.size() > 0)
+				oxygen.pop_back();
+		}
 		synch_mvwaddch(win, 2, i, '*');
 		this_thread::sleep_for(taskTime / WIN_COLS);
 	}
@@ -304,6 +311,7 @@ void Lungs::drawOxygen() {
 
 void Lungs::interact(Erythrocyte& erythrocyte) {
 	if (oxygen.size() > 0) {
+		lock_guard<mutex> lck {oxygenMtx};
 		erythrocyte.takeOxygen(std::move(oxygen.back()));
 		oxygen.pop_back();
 	}
