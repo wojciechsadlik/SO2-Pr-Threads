@@ -7,6 +7,7 @@
 #include <chrono>
 #include <random>
 #include <vector>
+#include <forward_list>
 using namespace std;
 
 const int ESC = 27;
@@ -202,8 +203,8 @@ class Erythrocyte {
 	mutex setable;
 
 public:
-	Erythrocyte();		// TODO: implement
-	~Erythrocyte();		// TODO: implement
+	Erythrocyte() = default;		// TODO: implement
+	~Erythrocyte() = default;;		// TODO: implement
 	void takeOxygen(unique_ptr<Oxygen> oxygen);
 	void giveOxygen();
 	bool move();
@@ -214,11 +215,11 @@ public:
 	void setDestination(Destination* destination);
 };
 
-Erythrocyte::Erythrocyte() {
-}
+// Erythrocyte::Erythrocyte() {
+// }
 
-Erythrocyte::~Erythrocyte() {
-}
+// Erythrocyte::~Erythrocyte() {
+// }
 
 void Erythrocyte::takeOxygen(unique_ptr<Oxygen> oxygen) {
 	lock_guard<mutex> lcks {setable};
@@ -249,17 +250,19 @@ bool Erythrocyte::move() {
 		}
 		++nextDirection;
 	}
+	
 	return t;
 }
 
 void Erythrocyte::operator()() {
 	while (true) {
 		bool t = move();
+
 		{
 			lock_guard<mutex> lcks {setable};
-			if (entranceLck) {
-				entranceLck.unlock();
-				entranceLck.release();
+			if (nextDirection >= 2 && entranceLck) {
+					entranceLck.unlock();
+					entranceLck.release();
 			}
 		}
 
@@ -276,29 +279,35 @@ void Erythrocyte::operator()() {
 }
 
 void Erythrocyte::draw() {
-	lock_guard<mutex> lcks {setable};
-	if (oxygen == nullptr)
-		synch_mvwprintw(stdscr, pos.line, pos.col, Color::ERYTHROCYTE_NO, "%02d", id);
-	else
-		synch_mvwprintw(stdscr, pos.line, pos.col, Color::ERYTHROCYTE_O, "%02d", id);
+	unique_lock<mutex> lcks {setable, try_to_lock};
+	if (lcks) {
+		if (oxygen == nullptr)
+			synch_mvwprintw(stdscr, pos.line, pos.col, Color::ERYTHROCYTE_NO, "%02d", id);
+		else
+			synch_mvwprintw(stdscr, pos.line, pos.col, Color::ERYTHROCYTE_O, "%02d", id);
+	}
 }
 
 void Erythrocyte::setVein(Vein* vein) {
 	lock_guard<mutex> lcks {setable};
-	
+
 	this->vein = vein;
 
 	entranceLck = unique_lock<mutex>{vein->entranceMtx};
+
 	lock_guard<mutex> lck {vein->accessMtx};
-	setPos(vein->getStartPos());
-	setDestination(vein->getDestination());
+
+	this->pos = vein->getStartPos();
+	this->destination = vein->getDestination();
 }
 
 void Erythrocyte::setPos(Coords pos) {
+	lock_guard<mutex> lcks {setable};
 	this->pos = pos;
 }
 
 void Erythrocyte::setDestination(Destination* destination) {
+	lock_guard<mutex> lcks {setable};
 	this->destination = destination;
 }
 /* koniec erytrocyt */
@@ -521,20 +530,22 @@ int main(int argc, char* argv[])
 	lungs.setVeins(&vHL, &vLH);
 	heart.setVeins(&vLH, nullptr, &vHL, nullptr);
 
-	Erythrocyte er, er2;
+	forward_list<Erythrocyte> erythrocytes;
+	erythrocytes.emplace_front();
+	erythrocytes.emplace_front();
 
 	thread lungsThd(ref(lungs));
-	thread erThd(ref(er));
-	thread er2Thd(ref(er2));
-
-	heart.addErytrocyte(ref(er));
-	heart.addErytrocyte(ref(er2));
+	forward_list<thread> erThds;
+	for (auto& er : erythrocytes) {
+		erThds.emplace_front(ref(er));
+		heart.addErytrocyte(ref(er));
+	}
  
 	while (getch() != ESC) {
 		vLH.draw();
 		vHL.draw();
-		er.draw();
-		er2.draw();
+		for (auto& er : erythrocytes)
+			er.draw();
 		refresh();
 		lungs.refresh();
 		heart.refresh();
@@ -547,8 +558,8 @@ int main(int argc, char* argv[])
 	}
 
 	lungsThd.join();
-	erThd.join();
-	er2Thd.join();
+	for (auto& erThd : erThds)
+		erThd.join();
 
 	this_thread::sleep_for(chrono::seconds{1});
 

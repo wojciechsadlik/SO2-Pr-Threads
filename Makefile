@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -Wall -g -std=c++11 -lncurses -pthread
+CXXFLAGS = -Wall -g -std=c++17 -lncurses -pthread
 
 CirculatorySystem: CirculatorySystem.o
 	$(CXX) $(CXXFLAGS) -o CirculatorySystem CirculatorySystem.o
