@@ -112,6 +112,7 @@ class Oxygen {
 class Vein {
 	int startX, startY;
 	vector<char> directions;
+	Destination* destination;
 
 public:
 	mutex accessMtx;
@@ -119,6 +120,9 @@ public:
 	~Vein() = default;
 	vector<char>::iterator getIterator();
 	char getDirection(int i);
+	int getStartX();
+	int getStartY();
+	Destination* getDestination();
 };
 
 Vein::Vein(int startX, int startY, vector<char>& directions): 
@@ -133,23 +137,38 @@ char Vein::getDirection(int i) {
 	if ((size_t) i < directions.size()) return directions[i];
 	else return 'x';
 }
+
+int Vein::getStartX() {
+	return startX;
+}
+
+int Vein::getStartY() {
+	return startY;
+}
+
+Destination* Vein::getDestination() {
+	return destination;
+}
 /* koniec zyla */
 
 /* rozwidlenie zyl*/
 class Fork {
-	Vein* vIn;
+	Vein* vIn {nullptr};
 	vector<Vein*> vOuts;
 };
 /* koniec rozwidlenie zyl */
 
 /* serce */
 class Heart : public Destination {
-	Vein* leftVIn, rightVIn, leftVOut, rightVOut;
+	Vein* leftVIn {nullptr};
+	Vein* rightVIn {nullptr};
+	Vein* leftVOut {nullptr};
+	Vein* rightVOut {nullptr};
 
 public:
 	Heart();
 	~Heart();
-	void operator()();
+	void interact(Erythrocyte& erythrocyte);
 };
 /* koniec serce */
 
@@ -170,6 +189,8 @@ public:
 	void move();
 	void operator()();
 	void draw();
+	void setVein(Vein* vein);
+	void setXY(int x, int y);
 };
 
 Erythrocyte::Erythrocyte() {
@@ -205,11 +226,14 @@ void Erythrocyte::move() {
 void Erythrocyte::operator()() {
 	while (true) {
 		move();
+		draw();
+		this_thread::sleep_for(chrono::milliseconds(TASK_TIME_LB));
 		{
 			lock_guard<mutex> lck {endThreadsMtx};
 			if (endThreads) break;
 		}	
-	}	
+	}
+	synch_mvwprintw(stdscr, y, x, Color::DEFAULT, "%02d", id);
 }
 
 void Erythrocyte::draw() {
@@ -217,6 +241,17 @@ void Erythrocyte::draw() {
 		synch_mvwprintw(stdscr, y, x, Color::ERYTHROCYTE_NO, "%02d", id);
 	else
 		synch_mvwprintw(stdscr, y, x, Color::ERYTHROCYTE_O, "%02d", id);
+}
+
+void Erythrocyte::setVein(Vein* vein) {
+	this->vein = vein;
+	lock_guard lck {vein->accessMtx};
+	setXY(vein->getStartX(), vein->getStartY());
+}
+
+void Erythrocyte::setXY(int x, int y) {
+	this->x = x;
+	this->y = y;
 }
 /* koniec erytrocyt */
 
@@ -228,7 +263,8 @@ class Lungs : public Destination{
 	vector<unique_ptr<Oxygen>> oxygen;
 	mutex oxygenMtx;
 	size_t capacity {17};	// maksymalna liczba jednostek tlenu
-	//Vein* vIn, vOut;
+	Vein* vIn {nullptr};
+	Vein* vOut {nullptr};
 
 public:
 	Lungs();
@@ -326,7 +362,8 @@ void Lungs::refresh() {
 /* komorka */
 class Cell: public Destination {
 	WINDOW* win = nullptr;
-	Vein* vIn, vOut;
+	Vein* vIn {nullptr};
+	Vein* vOut {nullptr};
 
 	Cell();					// TODO: implement
 	~Cell();				// TODO: implement
