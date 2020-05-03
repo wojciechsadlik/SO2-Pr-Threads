@@ -191,6 +191,7 @@ public:
 	void draw();
 	void setVein(Vein* vein);
 	void setXY(int x, int y);
+	void setDestination(Destination* destination);
 };
 
 Erythrocyte::Erythrocyte() {
@@ -245,13 +246,19 @@ void Erythrocyte::draw() {
 
 void Erythrocyte::setVein(Vein* vein) {
 	this->vein = vein;
-	lock_guard lck {vein->accessMtx};
+
+	lock_guard<mutex> lck {vein->accessMtx};
 	setXY(vein->getStartX(), vein->getStartY());
+	setDestination(vein->getDestination());
 }
 
 void Erythrocyte::setXY(int x, int y) {
 	this->x = x;
 	this->y = y;
+}
+
+void Erythrocyte::setDestination(Destination* destination) {
+	this->destination = destination;
 }
 /* koniec erytrocyt */
 
