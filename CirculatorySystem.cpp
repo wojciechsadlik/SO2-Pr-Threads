@@ -43,7 +43,7 @@ void initColors() {					//inicjalizuje pary kolorow
 	init_pair(Color::INHALE, COLOR_BLUE, COLOR_BLACK);
 	init_pair(Color::EXHALE, COLOR_RED, COLOR_BLACK);
 	init_pair(Color::OXYGEN, COLOR_WHITE, COLOR_CYAN);
-	init_pair(Color::VEIN, COLOR_BLACK, COLOR_WHITE);
+	init_pair(Color::VEIN, COLOR_YELLOW, COLOR_BLACK);
 	init_pair(Color::ERYTHROCYTE_O, COLOR_WHITE, COLOR_RED);
 	init_pair(Color::ERYTHROCYTE_NO, COLOR_WHITE, COLOR_BLUE);
 }
@@ -268,7 +268,7 @@ void Erythrocyte::operator()() {
 
 		if (t) destination->interact(*this);
 
-		this_thread::sleep_for(chrono::milliseconds(1000));
+		this_thread::sleep_for(chrono::milliseconds(500));
 		
 		{
 			lock_guard<mutex> lck {endThreadsMtx};
@@ -380,7 +380,7 @@ class Lungs : public Destination{
 	WINDOW* win {nullptr};
 	vector<unique_ptr<Oxygen>> oxygen;
 	mutex oxygenMtx;
-	size_t capacity {17};	// maksymalna liczba jednostek tlenu
+	size_t capacity {16};	// maksymalna liczba jednostek tlenu
 	Vein* vIn {nullptr};
 	Vein* vOut {nullptr};
 
@@ -419,7 +419,6 @@ void Lungs::operator()() {
 	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
 	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "ended");
-	this->refresh();
 }
 
 void Lungs::inhale() {
@@ -531,8 +530,8 @@ int main(int argc, char* argv[])
 	heart.setVeins(&vLH, nullptr, &vHL, nullptr);
 
 	forward_list<Erythrocyte> erythrocytes;
-	erythrocytes.emplace_front();
-	erythrocytes.emplace_front();
+	for (int i = 0; i < 3; ++i)
+		erythrocytes.emplace_front();
 
 	thread lungsThd(ref(lungs));
 	forward_list<thread> erThds;
@@ -558,8 +557,12 @@ int main(int argc, char* argv[])
 	}
 
 	lungsThd.join();
-	for (auto& erThd : erThds)
+	lungs.refresh();
+
+	for (auto& erThd : erThds) {
 		erThd.join();
+		refresh();
+	}
 
 	this_thread::sleep_for(chrono::seconds{1});
 
