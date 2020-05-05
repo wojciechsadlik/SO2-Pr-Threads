@@ -121,6 +121,7 @@ class Oxygen {
 
 /* zyla */
 class Vein {
+	int id;
 	Coords startPos;
 	vector<char> directions;
 	Destination* destination;
@@ -128,18 +129,19 @@ class Vein {
 public:
 	mutex entranceMtx;
 	mutex accessMtx;
-	Vein(Coords startPos, vector<char>& directions);
+	Vein(int id, Coords startPos, vector<char>& directions);
 	~Vein() = default;
 	vector<char>::iterator getIterator();
 	char getDirection(int i);
 	Coords getStartPos();
+	int getId();
 	void setDestination(Destination* destination);
 	Destination* getDestination();
 	void draw();
 };
 
-Vein::Vein(Coords startPos, vector<char>& directions): 
-startPos(startPos), directions(directions) {
+Vein::Vein(int id, Coords startPos, vector<char>& directions): 
+id(id), startPos(startPos), directions(directions) {
 }
 
 vector<char>::iterator Vein::getIterator() {
@@ -153,6 +155,10 @@ char Vein::getDirection(int i) {
 
 Coords Vein::getStartPos() {
 	return startPos;
+}
+
+int Vein::getId() {
+	return id;
 }
 
 void Vein::setDestination(Destination* destination) {
@@ -206,11 +212,12 @@ public:
 	Erythrocyte() = default;		// TODO: implement
 	~Erythrocyte() = default;;		// TODO: implement
 	void takeOxygen(unique_ptr<Oxygen> oxygen);
-	void giveOxygen();
+	unique_ptr<Oxygen> giveOxygen();
 	bool move();
 	void operator()();
 	void draw();
 	void setVein(Vein* vein);
+	Vein* getVein();
 	void setPos(Coords pos);
 	void setDestination(Destination* destination);
 };
@@ -226,9 +233,9 @@ void Erythrocyte::takeOxygen(unique_ptr<Oxygen> oxygen) {
 	this->oxygen = std::move(oxygen);
 }
 
-void Erythrocyte::giveOxygen() {
+unique_ptr<Oxygen> Erythrocyte::giveOxygen() {
 	lock_guard<mutex> lcks {setable};
-	oxygen.release();
+	return std::move(oxygen);
 }
 
 bool Erythrocyte::move() {
@@ -288,6 +295,10 @@ void Erythrocyte::draw() {
 	}
 }
 
+Vein* Erythrocyte::getVein() {
+	return vein;
+}
+
 void Erythrocyte::setVein(Vein* vein) {
 	lock_guard<mutex> lcks {setable};
 
@@ -318,21 +329,21 @@ class Heart : public Destination {
 	const int WIN_LINES {6};
 	const int WIN_COLS {17};
 	WINDOW* win {nullptr};
-	Vein* leftUpV {nullptr};
-	Vein* leftDownV {nullptr};
-	Vein* rightUpV {nullptr};
-	Vein* rightDownV {nullptr};
+	Vein* inUpV {nullptr};
+	Vein* inDownV {nullptr};
+	Vein* outUpV {nullptr};
+	Vein* outDownV {nullptr};
 
 public:
 	mutex accessMtx;
 	Heart(Coords pos);
 	~Heart();
-	void setVeins(Vein* leftUpV, Vein* leftDownV, Vein* rightUpV, Vein* rightDownV);
+	void setVeins(Vein* inUpV, Vein* inDownV, Vein* outUpV, Vein* rightDownV);
 	void refresh();
 	void addErytrocyte(Erythrocyte& erythrocyte);
 	void interact(Erythrocyte& erythrocyte);
-	Coords rightUpVPos();
-	Coords rightDownVPos();
+	Coords outUpVPos();
+	Coords outDownVPos();
 };
 
 Heart::Heart(Coords pos): pos(pos) {
@@ -345,11 +356,11 @@ Heart::~Heart() {
 	delwin(win);
 }
 
-void Heart::setVeins(Vein* leftUpV, Vein* leftDownV, Vein* rightUpV, Vein* rightDownV){
-	this->leftUpV = leftUpV;
-	this->leftDownV = leftDownV;
-	this->rightUpV = rightUpV;
-	this->rightDownV = rightDownV;
+void Heart::setVeins(Vein* inUpV, Vein* inDownV, Vein* outUpV, Vein* outDownV){
+	this->inUpV = inUpV;
+	this->inDownV = inDownV;
+	this->outUpV = outUpV;
+	this->outDownV = outDownV;
 }
 
 void Heart::refresh() {
@@ -359,16 +370,21 @@ void Heart::refresh() {
 }
 
 void Heart::addErytrocyte(Erythrocyte& erythrocyte) {
-	erythrocyte.setVein(rightUpV);
+	erythrocyte.setVein(outUpV);
 }
 
 void Heart::interact(Erythrocyte& erythrocyte) {
-	erythrocyte.giveOxygen();
-	erythrocyte.setVein(rightUpV);
+	Vein* vein = erythrocyte.getVein();
+	if (vein->getId() == inUpV->getId()) erythrocyte.setVein(outDownV);
+	else erythrocyte.setVein(outUpV);
 }
 
-Coords Heart::rightUpVPos() {
+Coords Heart::outUpVPos() {
 	return Coords{pos.line + 1, pos.col + WIN_COLS};
+}
+
+Coords Heart::outDownVPos() {
+	return Coords{pos.line + 4, pos.col + WIN_COLS};
 }
 /* koniec serce */
 
@@ -411,10 +427,9 @@ void Lungs::operator()() {
 	while (true) {
 		inhale();
 		exhale();
-		{
-			lock_guard<mutex> lck {endThreadsMtx};
-			if (endThreads) break;
-		}	
+
+		lock_guard<mutex> lck {endThreadsMtx};
+		if (endThreads) break;
 	}
 	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
 	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
@@ -490,16 +505,101 @@ void Lungs::setVeins(Vein* vIn, Vein* vOut) {
 
 /* komorka */
 class Cell: public Destination {
-	WINDOW* win = nullptr;
+	Coords pos;
+	const int WIN_LINES {6};
+	const int WIN_COLS {17};
+	WINDOW* win {nullptr};
 	Vein* vIn {nullptr};
 	Vein* vOut {nullptr};
+	unique_ptr<Oxygen> oxygen {nullptr};
+	mutex modifiableMtx;
 
-	Cell();					// TODO: implement
+public:
+	Cell(Coords pos);		// TODO: implement
 	~Cell();				// TODO: implement
 	void waitForOxygen();	// TODO: implement
 	void processOxygen();	// TODO: implement
 	void operator()();		// TODO: implement
+	void interact(Erythrocyte& erythrocyte);
+	void setVeins(Vein* vIn, Vein* vOut);
+	void refresh();
 };
+
+Cell::Cell(Coords pos): pos(pos) {
+	win = newwin(WIN_LINES, WIN_COLS, pos.line, pos.col);
+	box(win, 0, 0);
+	mvwprintw(win, 0, 0, "Cell");
+}
+
+Cell::~Cell() {
+	delwin(win);
+}
+
+void Cell::waitForOxygen() {
+	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
+	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
+	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "waiting");
+	while (true) {
+		{
+			lock_guard<mutex> lckm {modifiableMtx};
+			if (oxygen != nullptr) break;
+		}
+		lock_guard<mutex> lcke {endThreadsMtx};
+		if (endThreads) return;
+	}
+	oxygen.release();
+}
+
+void Cell::processOxygen() {
+	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
+	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
+	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "processing");
+	chrono::milliseconds taskTime {randomTime(TASK_TIME_LB, TASK_TIME_UB)};		//czas snu - [2.5s, 3.5s]
+	for (int i = 1; i < WIN_COLS - 1; ++i) {					//pasek postepu
+		{
+			lock_guard<mutex> lckm {modifiableMtx};
+			if (oxygen != nullptr) {
+				synch_wClearLine(win, 2, 1, WIN_COLS - 1);
+				i = 1;
+				oxygen.release();
+			}
+		}
+		synch_mvwaddch(win, 2, i, '*');
+		this_thread::sleep_for(taskTime / WIN_COLS);
+		
+		lock_guard<mutex> lcke {endThreadsMtx};
+		if (endThreads) return;
+	}
+}
+
+void Cell::operator()() {
+	while (true) {
+		waitForOxygen();
+		processOxygen();
+
+		lock_guard<mutex> lck {endThreadsMtx};
+		if (endThreads) break;
+	}
+	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
+	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
+	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "ended");
+}
+
+void Cell::interact(Erythrocyte& erythrocyte) {
+	lock_guard lckm {modifiableMtx};
+	oxygen = erythrocyte.giveOxygen();
+}
+
+void setVeins(Vein* vIn, Vein* vOut) {
+
+}
+
+void Cell::refresh() {
+	box(win, 0, 0);
+	mvwprintw(win, 0, 0, "Cell");
+	wrefresh(win);
+}
+
 /* koniec komorka*/
  
 int main(int argc, char* argv[])
@@ -519,15 +619,20 @@ int main(int argc, char* argv[])
 	Heart heart{Coords{10, TERM_COLS / 3}};
 
 	vector<char> vpath {'l', 'd', 'd', 'd', 'd', 'd', 'd', 'r'};
-	Vein vLH{lungs.vOutPos(), vpath};
+	Vein vLH{0, lungs.vOutPos(), vpath};
 	vLH.setDestination(&heart);
 
 	vpath = vector<char>{'r', 'u', 'u', 'u', 'u', 'u', 'u', 'l'};
-	Vein vHL{heart.rightUpVPos(), vpath};
+	Vein vHL{1, heart.outUpVPos(), vpath};
 	vHL.setDestination(&lungs);
 
+	vpath = vector<char>{'r','d','d','d','l','l','l','l','l','l',
+						'l','l','l','l','l','l', 'u','u','u','r'};
+	Vein vHH{2, heart.outDownVPos(), vpath};
+	vHH.setDestination(&heart);
+
 	lungs.setVeins(&vHL, &vLH);
-	heart.setVeins(&vLH, nullptr, &vHL, nullptr);
+	heart.setVeins(&vLH, &vHH, &vHL, &vHH);
 
 	forward_list<Erythrocyte> erythrocytes;
 	for (int i = 0; i < 3; ++i)
@@ -543,6 +648,7 @@ int main(int argc, char* argv[])
 	while (getch() != ESC) {
 		vLH.draw();
 		vHL.draw();
+		vHH.draw();
 		for (auto& er : erythrocytes)
 			er.draw();
 		refresh();
