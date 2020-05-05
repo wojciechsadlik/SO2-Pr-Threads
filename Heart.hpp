@@ -1,0 +1,68 @@
+#pragma once
+
+#include "utils.hpp"
+#include "Destination.hpp"
+#include "Vein.hpp"
+
+class Heart : public Destination {
+	Coords pos;
+	const int WIN_LINES {6};
+	const int WIN_COLS {17};
+	WINDOW* win {nullptr};
+	Vein* inUpV {nullptr};
+	Vein* inDownV {nullptr};
+	Vein* outUpV {nullptr};
+	Vein* outDownV {nullptr};
+
+public:
+	mutex accessMtx;
+	Heart(Coords pos);
+	~Heart();
+	void setVeins(Vein* inUpV, Vein* inDownV, Vein* outUpV, Vein* rightDownV);
+	void refresh();
+	void addErytrocyte(Erythrocyte& erythrocyte);
+	void interact(Erythrocyte& erythrocyte);
+	Coords outUpVPos();
+	Coords outDownVPos();
+};
+
+Heart::Heart(Coords pos): pos(pos) {
+	win = newwin(WIN_LINES, WIN_COLS, pos.line, pos.col);
+	box(win, 0, 0);
+	mvwprintw(win, 0, 0, "Heart");
+}
+
+Heart::~Heart() {
+	delwin(win);
+}
+
+void Heart::setVeins(Vein* inUpV, Vein* inDownV, Vein* outUpV, Vein* outDownV){
+	this->inUpV = inUpV;
+	this->inDownV = inDownV;
+	this->outUpV = outUpV;
+	this->outDownV = outDownV;
+}
+
+void Heart::refresh() {
+	box(win, 0, 0);
+	mvwprintw(win, 0, 0, "Heart");
+	wrefresh(win);
+}
+
+void Heart::addErytrocyte(Erythrocyte& erythrocyte) {
+	erythrocyte.setVein(outUpV);
+}
+
+void Heart::interact(Erythrocyte& erythrocyte) {
+	Vein* vein = erythrocyte.getVein();
+	if (vein->getId() == inUpV->getId()) erythrocyte.setVein(outDownV);
+	else erythrocyte.setVein(outUpV);
+}
+
+Coords Heart::outUpVPos() {
+	return Coords{pos.line + 1, pos.col + WIN_COLS};
+}
+
+Coords Heart::outDownVPos() {
+	return Coords{pos.line + 4, pos.col + WIN_COLS};
+}
