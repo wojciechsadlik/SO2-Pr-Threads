@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
 
 	mutex erListMtx;
 	forward_list<Erythrocyte> erythrocytes;
-	for (int i = 10; i > 0; --i)
+	for (int i = 15; i > 0; --i)
 		erythrocytes.emplace_front(i);
 
 	thread lungsThd(ref(lungs));
@@ -59,12 +59,11 @@ int main(int argc, char* argv[])
 		vHL.draw();
 		vHC.draw();
 		vCH.draw();
+
 		{
 			lock_guard<mutex> lckErL{erListMtx};
-			for (auto& er : erythrocytes) {
-				unique_lock<mutex> lckErA{er.accessMtx, try_to_lock};
-				if (lckErA)	er.draw();
-			}
+			for (auto& er : erythrocytes)
+				er.draw();
 		}
 			
 		refresh();

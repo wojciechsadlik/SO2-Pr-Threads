@@ -13,6 +13,7 @@ class Heart : public Destination {
 	Vein* inDownV {nullptr};
 	Vein* outUpV {nullptr};
 	Vein* outDownV {nullptr};
+	mutex modifyableMtx;
 
 public:
 	Heart(Coords pos);
@@ -37,6 +38,7 @@ Heart::~Heart() {
 }
 
 void Heart::setVeins(Vein* inUpV, Vein* inDownV, Vein* outUpV, Vein* outDownV){
+	lock_guard<mutex> lckm{modifyableMtx};
 	this->inUpV = inUpV;
 	this->inDownV = inDownV;
 	this->outUpV = outUpV;
@@ -50,12 +52,12 @@ void Heart::refresh() {
 }
 
 void Heart::addErythrocyte(Erythrocyte& erythrocyte) {
-	lock_guard<mutex> lck {erythrocyte.accessMtx};
+	lock_guard<mutex> lckm{modifyableMtx};
 	erythrocyte.setVein(outUpV);
 }
 
 void Heart::interact(Erythrocyte& erythrocyte) {
-	lock_guard<mutex> lck {erythrocyte.accessMtx};
+	lock_guard<mutex> lckm{modifyableMtx};
 	Vein* vein = erythrocyte.getVein();
 	if (vein->getId() == inUpV->getId()) erythrocyte.setVein(outDownV);
 	else erythrocyte.setVein(outUpV);
@@ -73,10 +75,7 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 		++it;
 		lckErL.unlock();
 
-		{
-			lock_guard<mutex> lck {accessMtx};
-			addErythrocyte(*er);
-		}
+		addErythrocyte(*er);
 
 		{
 			lock_guard<mutex> lck {endThreadsMtx};
@@ -85,14 +84,17 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 	}
 	
 	if (lckErL) lckErL.unlock();
+
 	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "loading ended");
 }
 
 Coords Heart::outUpVPos() {
+	lock_guard<mutex> lckm{modifyableMtx};
 	return Coords{pos.line + 1, pos.col + WIN_COLS};
 }
 
 Coords Heart::outDownVPos() {
+	lock_guard<mutex> lckm{modifyableMtx};
 	return Coords{pos.line + 4, pos.col + WIN_COLS};
 }

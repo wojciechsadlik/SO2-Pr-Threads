@@ -8,10 +8,10 @@ class Vein {
 	Coords startPos;
 	string directions;
 	Destination* destination;
+	mutex dataAccessMtx;
 
 public:
 	mutex entranceMtx;
-	mutex dataAccessMtx;
 	Vein(int id, Coords startPos, string directions);
 	~Vein() = default;
 	vector<char>::iterator getIterator();
@@ -28,30 +28,35 @@ id(id), startPos(startPos), directions(directions) {
 }
 
 char Vein::getDirection(int i) {
+	lock_guard<mutex> lckd {dataAccessMtx};
 	if ((size_t) i < directions.size()) return directions[i];
 	else return 'x';
 }
 
 Coords Vein::getStartPos() {
+	lock_guard<mutex> lckd {dataAccessMtx};
 	return startPos;
 }
 
 int Vein::getId() {
+	lock_guard<mutex> lckd {dataAccessMtx};
 	return id;
 }
 
 void Vein::setDestination(Destination* destination) {
+	lock_guard<mutex> lckd {dataAccessMtx};
 	this->destination = destination;
 }
 
 Destination* Vein::getDestination() {
+	lock_guard<mutex> lckd {dataAccessMtx};
 	return destination;
 }
 
 void Vein::draw() {
+	lock_guard<mutex> lckd {dataAccessMtx};
 	int col = startPos.col;
 	int line = startPos.line;
-	lock_guard<mutex> lck {dataAccessMtx};
 	lock_guard<mutex> lckp {printMtx};
 	wattron(stdscr, COLOR_PAIR(Color::VEIN));
 	for (int i = 0; (size_t) i < directions.size(); ++i) {
