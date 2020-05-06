@@ -6,13 +6,13 @@
 class Vein {
 	int id;
 	Coords startPos;
-	vector<char> directions;
+	string directions;
 	Destination* destination;
 
 public:
 	mutex entranceMtx;
 	mutex dataAccessMtx;
-	Vein(int id, Coords startPos, vector<char>& directions);
+	Vein(int id, Coords startPos, string directions);
 	~Vein() = default;
 	vector<char>::iterator getIterator();
 	char getDirection(int i);
@@ -23,12 +23,8 @@ public:
 	void draw();
 };
 
-Vein::Vein(int id, Coords startPos, vector<char>& directions): 
+Vein::Vein(int id, Coords startPos, string directions): 
 id(id), startPos(startPos), directions(directions) {
-}
-
-vector<char>::iterator Vein::getIterator() {
-	return directions.begin();
 }
 
 char Vein::getDirection(int i) {

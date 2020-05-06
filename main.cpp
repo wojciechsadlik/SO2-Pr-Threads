@@ -24,20 +24,16 @@ int main(int argc, char* argv[])
 	Heart heart{Coords{10, TERM_COLS / 3}};
 	Cell cell{Coords{18, TERM_COLS / 3}};
 
-	vector<char> vpath {'l', 'd', 'd', 'd', 'd', 'd', 'd', 'r'};
-	Vein vLH{0, lungs.vOutPos(), vpath};
+	Vein vLH{0, lungs.vOutPos(), "lddddddr"};
 	vLH.setDestination(&heart);
 
-	vpath = vector<char>{'r', 'u', 'u', 'u', 'u', 'u', 'u', 'l'};
-	Vein vHL{1, heart.outUpVPos(), vpath};
+	Vein vHL{1, heart.outUpVPos(), "ruuuuuul"};
 	vHL.setDestination(&lungs);
 
-	vpath = vector<char>{'r', 'd', 'd', 'd', 'd', 'd', 'd', 'l'};
-	Vein vHC{2, heart.outDownVPos(), vpath};
+	Vein vHC{2, heart.outDownVPos(), "rddddddl"};
 	vHC.setDestination(&cell);
 
-	vpath = vector<char>{'l', 'u', 'u', 'u', 'u', 'u', 'u', 'r'};
-	Vein vCH{3, cell.vOutPos(), vpath};
+	Vein vCH{3, cell.vOutPos(), "luuuuuur"};
 	vCH.setDestination(&heart);
 
 	lungs.setVeins(&vHL, &vLH);
