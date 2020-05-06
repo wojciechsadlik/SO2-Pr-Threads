@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.hpp"
+#include "global.hpp"
 #include "Destination.hpp"
 
 class Vein {
@@ -11,7 +11,7 @@ class Vein {
 
 public:
 	mutex entranceMtx;
-	mutex accessMtx;
+	mutex dataAccessMtx;
 	Vein(int id, Coords startPos, vector<char>& directions);
 	~Vein() = default;
 	vector<char>::iterator getIterator();
@@ -55,7 +55,7 @@ Destination* Vein::getDestination() {
 void Vein::draw() {
 	int col = startPos.col;
 	int line = startPos.line;
-	lock_guard<mutex> lck {accessMtx};
+	lock_guard<mutex> lck {dataAccessMtx};
 	lock_guard<mutex> lckp {printMtx};
 	wattron(stdscr, COLOR_PAIR(Color::VEIN));
 	for (int i = 0; (size_t) i < directions.size(); ++i) {

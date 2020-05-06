@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.hpp"
+#include "global.hpp"
 #include "Destination.hpp"
 #include "Vein.hpp"
 #include "Oxygen.hpp"
@@ -13,11 +13,12 @@ class Erythrocyte {
 	Destination* destination {nullptr};
 	int nextDirection {0};
 	unique_lock<mutex> entranceLck;
-	mutex setable;
 
 public:
-	Erythrocyte() = default;		// TODO: implement
-	~Erythrocyte() = default;;		// TODO: implement
+	mutex accessMtx;
+	Erythrocyte() = default;
+	Erythrocyte(int id);
+	~Erythrocyte() = default;
 	void takeOxygen(unique_ptr<Oxygen> oxygen);
 	unique_ptr<Oxygen> giveOxygen();
 	bool move();
@@ -29,29 +30,23 @@ public:
 	void setDestination(Destination* destination);
 };
 
-// Erythrocyte::Erythrocyte() {
-// }
-
-// Erythrocyte::~Erythrocyte() {
-// }
+Erythrocyte::Erythrocyte(int id): id(id){
+}
 
 void Erythrocyte::takeOxygen(unique_ptr<Oxygen> oxygen) {
-	lock_guard<mutex> lcks {setable};
 	this->oxygen = std::move(oxygen);
 }
 
 unique_ptr<Oxygen> Erythrocyte::giveOxygen() {
-	lock_guard<mutex> lcks {setable};
 	return std::move(oxygen);
 }
 
 bool Erythrocyte::move() {
 	bool t = false;
-	lock_guard<mutex> lcks {setable};
 	if (vein != nullptr) {
 		char c = '?';
 		{
-			lock_guard<mutex> lck {vein->accessMtx};
+			lock_guard<mutex> lck {vein->dataAccessMtx};
 			c = vein->getDirection(nextDirection);
 		}
 
@@ -70,31 +65,40 @@ bool Erythrocyte::move() {
 
 void Erythrocyte::operator()() {
 	while (true) {
-		bool t = move();
+		bool t;
 
 		{
-			lock_guard<mutex> lcks {setable};
+			lock_guard<mutex> lcka {accessMtx};
+			t = move();
 			if (nextDirection >= 2 && entranceLck) {
 					entranceLck.unlock();
 					entranceLck.release();
 			}
 		}
 
-		if (t) destination->interact(*this);
+		if (t) {
+			lock_guard<mutex> lcka {destination->accessMtx};
+			destination->interact(*this);
+		}
 
 		this_thread::sleep_for(chrono::milliseconds(500));
 		
 		{
-			lock_guard<mutex> lck {endThreadsMtx};
+			lock_guard<mutex> lcke {endThreadsMtx};
 			if (endThreads) break;
 		}	
 	}
+
+	if (entranceLck) {
+		entranceLck.unlock();
+		entranceLck.release();
+	}
+
 	synch_mvwprintw(stdscr, pos.line, pos.col, Color::DEFAULT, "%02d", id);
 }
 
 void Erythrocyte::draw() {
-	unique_lock<mutex> lcks {setable, try_to_lock};
-	if (lcks) {
+	if (vein != nullptr) {
 		if (oxygen == nullptr)
 			synch_mvwprintw(stdscr, pos.line, pos.col, Color::ERYTHROCYTE_NO, "%02d", id);
 		else
@@ -107,24 +111,20 @@ Vein* Erythrocyte::getVein() {
 }
 
 void Erythrocyte::setVein(Vein* vein) {
-	lock_guard<mutex> lcks {setable};
-
 	this->vein = vein;
 
 	entranceLck = unique_lock<mutex>{vein->entranceMtx};
 
-	lock_guard<mutex> lck {vein->accessMtx};
+	lock_guard<mutex> lck {vein->dataAccessMtx};
 
 	this->pos = vein->getStartPos();
 	this->destination = vein->getDestination();
 }
 
 void Erythrocyte::setPos(Coords pos) {
-	lock_guard<mutex> lcks {setable};
 	this->pos = pos;
 }
 
 void Erythrocyte::setDestination(Destination* destination) {
-	lock_guard<mutex> lcks {setable};
 	this->destination = destination;
 }

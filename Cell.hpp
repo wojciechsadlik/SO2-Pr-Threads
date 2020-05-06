@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utils.hpp"
+#include "global.hpp"
 #include "Destination.hpp"
 #include "Vein.hpp"
 #include "Oxygen.hpp"
@@ -13,16 +13,16 @@ class Cell: public Destination {
 	Vein* vIn {nullptr};
 	Vein* vOut {nullptr};
 	unique_ptr<Oxygen> oxygen {nullptr};
-	mutex modifiableMtx;
 
 public:
-	Cell(Coords pos);		// TODO: implement
-	~Cell();				// TODO: implement
-	void waitForOxygen();	// TODO: implement
-	void processOxygen();	// TODO: implement
-	void operator()();		// TODO: implement
+	Cell(Coords pos);
+	~Cell();
+	void waitForOxygen();
+	void processOxygen();
+	void operator()();
 	void interact(Erythrocyte& erythrocyte);
 	void setVeins(Vein* vIn, Vein* vOut);
+	Coords vOutPos();
 	void refresh();
 };
 
@@ -42,7 +42,7 @@ void Cell::waitForOxygen() {
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "waiting");
 	while (true) {
 		{
-			lock_guard<mutex> lckm {modifiableMtx};
+			lock_guard<mutex> lcka {accessMtx};
 			if (oxygen != nullptr) break;
 		}
 		lock_guard<mutex> lcke {endThreadsMtx};
@@ -58,7 +58,7 @@ void Cell::processOxygen() {
 	chrono::milliseconds taskTime {randomTime(TASK_TIME_LB, TASK_TIME_UB)};		//czas snu - [2.5s, 3.5s]
 	for (int i = 1; i < WIN_COLS - 1; ++i) {					//pasek postepu
 		{
-			lock_guard<mutex> lckm {modifiableMtx};
+			lock_guard<mutex> lcka {accessMtx};
 			if (oxygen != nullptr) {
 				synch_wClearLine(win, 2, 1, WIN_COLS - 1);
 				i = 1;
@@ -87,12 +87,18 @@ void Cell::operator()() {
 }
 
 void Cell::interact(Erythrocyte& erythrocyte) {
-	lock_guard lckm {modifiableMtx};
+	lock_guard<mutex> lcka {erythrocyte.accessMtx};
 	oxygen = erythrocyte.giveOxygen();
+	erythrocyte.setVein(vOut);
 }
 
-void setVeins(Vein* vIn, Vein* vOut) {
+void Cell::setVeins(Vein* vIn, Vein* vOut) {
+	this->vIn = vIn;
+	this->vOut = vOut;
+}
 
+Coords Cell::vOutPos() {
+	return Coords{pos.line + 2, pos.col - 2};
 }
 
 void Cell::refresh() {

@@ -1,4 +1,4 @@
-#include "utils.hpp"
+#include "global.hpp"
 #include "Erythrocyte.hpp"
 #include "Vein.hpp"
 #include "Lungs.hpp"
@@ -22,6 +22,7 @@ int main(int argc, char* argv[])
 
 	Lungs lungs{Coords{2, TERM_COLS / 3,}};
 	Heart heart{Coords{10, TERM_COLS / 3}};
+	Cell cell{Coords{18, TERM_COLS / 3}};
 
 	vector<char> vpath {'l', 'd', 'd', 'd', 'd', 'd', 'd', 'r'};
 	Vein vLH{0, lungs.vOutPos(), vpath};
@@ -31,34 +32,49 @@ int main(int argc, char* argv[])
 	Vein vHL{1, heart.outUpVPos(), vpath};
 	vHL.setDestination(&lungs);
 
-	vpath = vector<char>{'r','d','d','d','l','l','l','l','l','l',
-						'l','l','l','l','l','l', 'u','u','u','r'};
-	Vein vHH{2, heart.outDownVPos(), vpath};
-	vHH.setDestination(&heart);
+	vpath = vector<char>{'r', 'd', 'd', 'd', 'd', 'd', 'd', 'l'};
+	Vein vHC{2, heart.outDownVPos(), vpath};
+	vHC.setDestination(&cell);
+
+	vpath = vector<char>{'l', 'u', 'u', 'u', 'u', 'u', 'u', 'r'};
+	Vein vCH{3, cell.vOutPos(), vpath};
+	vCH.setDestination(&heart);
 
 	lungs.setVeins(&vHL, &vLH);
-	heart.setVeins(&vLH, &vHH, &vHL, &vHH);
+	heart.setVeins(&vLH, &vCH, &vHL, &vHC);
+	cell.setVeins(&vHC, &vCH);
 
+	mutex erListMtx;
 	forward_list<Erythrocyte> erythrocytes;
-	for (int i = 0; i < 3; ++i)
-		erythrocytes.emplace_front();
+	for (int i = 10; i > 0; --i)
+		erythrocytes.emplace_front(i);
 
 	thread lungsThd(ref(lungs));
+	thread cellThd(ref(cell));
+
 	forward_list<thread> erThds;
-	for (auto& er : erythrocytes) {
+	for (auto& er : erythrocytes)
 		erThds.emplace_front(ref(er));
-		heart.addErytrocyte(ref(er));
-	}
- 
+
+	thread heartThd(ref(heart), &erythrocytes, &erListMtx);
+
 	while (getch() != ESC) {
 		vLH.draw();
 		vHL.draw();
-		vHH.draw();
-		for (auto& er : erythrocytes)
-			er.draw();
+		vHC.draw();
+		vCH.draw();
+		{
+			lock_guard<mutex> lckErL{erListMtx};
+			for (auto& er : erythrocytes) {
+				unique_lock<mutex> lckErA{er.accessMtx, try_to_lock};
+				if (lckErA)	er.draw();
+			}
+		}
+			
 		refresh();
 		lungs.refresh();
 		heart.refresh();
+		cell.refresh();
 		this_thread::sleep_for(chrono::milliseconds{20});
 	}
 
@@ -67,15 +83,21 @@ int main(int argc, char* argv[])
 		endThreads = true;
 	}
 
+	heartThd.join();
+	heart.refresh();
+
 	lungsThd.join();
 	lungs.refresh();
+
+	cellThd.join();
+	cell.refresh();
 
 	for (auto& erThd : erThds) {
 		erThd.join();
 		refresh();
 	}
 
-	this_thread::sleep_for(chrono::seconds{1});
+	this_thread::sleep_for(chrono::seconds{2});
 
 	endwin();
 
