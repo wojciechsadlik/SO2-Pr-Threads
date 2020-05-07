@@ -3,6 +3,8 @@
 #include "Vein.hpp"
 #include "Lungs.hpp"
 #include "Heart.hpp"
+#include "Fork.hpp"
+#include "Junction.hpp"
 #include "Cell.hpp"
 
 using namespace std;
@@ -20,25 +22,45 @@ int main(int argc, char* argv[])
 
 	refresh();
 
-	Lungs lungs{Coords{2, TERM_COLS / 3,}};
-	Heart heart{Coords{10, TERM_COLS / 3}};
-	Cell cell{Coords{18, TERM_COLS / 3}};
+	Lungs lungs{Coords{1, TERM_COLS / 3,}};
+	Heart heart{Coords{9, TERM_COLS / 3}};
+	Cell cell{Coords{17, TERM_COLS / 3}};
+	Cell cell2{Coords{25, TERM_COLS / 3}};
 
-	Vein vLH{0, lungs.vOutPos(), "lddddddr"};
+	Vein vLH{lungs.vOutPos(), "lddddddr"};
 	vLH.setDestination(&heart);
 
-	Vein vHL{1, heart.outUpVPos(), "ruuuuuul"};
+	Vein vHL{heart.outUpVPos(), "ruuuuuul"};
 	vHL.setDestination(&lungs);
 
-	Vein vHC{2, heart.outDownVPos(), "rddddddl"};
-	vHC.setDestination(&cell);
+	Vein vHF{heart.outDownVPos(), "rdddddd"};
+	Fork fork{&vHF};
+	vHF.setDestination(&fork);
 
-	Vein vCH{3, cell.vOutPos(), "luuuuuur"};
-	vCH.setDestination(&heart);
+	Vein vFC{vHF.getEndPos(), "l"};
+	vFC.setDestination(&cell);
+	fork.addVein(&vFC);
+
+	Vein vCJ{cell.vOutPos(), "l"};
+
+	Vein vJH{vCJ.getEndPos(), "uuuuuur"};
+	Junction junction{&vJH};
+	vJH.setDestination(&heart);
+	vCJ.setDestination(&junction);
+	junction.addVein(&vJH);
+
+	Vein vFC2{vHF.getEndPos(), "ddddddddl"};
+	vFC2.setDestination(&cell2);
+	fork.addVein(&vFC2);
+
+	Vein vC2J{cell2.vOutPos(), "luuuuuuu"};
+	vC2J.setDestination(&junction);
+	junction.addVein(&vC2J);
 
 	lungs.setVeins(&vHL, &vLH);
-	heart.setVeins(&vLH, &vCH, &vHL, &vHC);
-	cell.setVeins(&vHC, &vCH);
+	heart.setVeins(&vLH, &vJH, &vHL, &vHF);
+	cell.setVeins(&vFC, &vCJ);
+	cell2.setVeins(&vFC2, &vC2J);
 
 	mutex erListMtx;
 	forward_list<Erythrocyte> erythrocytes;
@@ -47,6 +69,7 @@ int main(int argc, char* argv[])
 
 	thread lungsThd(ref(lungs));
 	thread cellThd(ref(cell));
+	thread cell2Thd(ref(cell2));
 
 	forward_list<thread> erThds;
 	for (auto& er : erythrocytes)
@@ -57,8 +80,12 @@ int main(int argc, char* argv[])
 	while (getch() != ESC) {
 		vLH.draw();
 		vHL.draw();
-		vHC.draw();
-		vCH.draw();
+		vHF.draw();
+		vFC.draw();
+		vCJ.draw();
+		vJH.draw();
+		vFC2.draw();
+		vC2J.draw();
 
 		{
 			lock_guard<mutex> lckErL{erListMtx};
@@ -70,6 +97,7 @@ int main(int argc, char* argv[])
 		lungs.refresh();
 		heart.refresh();
 		cell.refresh();
+		cell2.refresh();
 		this_thread::sleep_for(chrono::milliseconds{20});
 	}
 
@@ -86,6 +114,9 @@ int main(int argc, char* argv[])
 
 	cellThd.join();
 	cell.refresh();
+
+	cell2Thd.join();
+	cell2.refresh();
 
 	for (auto& erThd : erThds) {
 		erThd.join();

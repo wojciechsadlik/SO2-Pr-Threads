@@ -59,7 +59,7 @@ void Heart::addErythrocyte(Erythrocyte& erythrocyte) {
 void Heart::interact(Erythrocyte& erythrocyte) {
 	lock_guard<mutex> lckm{modifyableMtx};
 	Vein* vein = erythrocyte.getVein();
-	if (vein->getId() == inUpV->getId()) erythrocyte.setVein(outDownV);
+	if (vein == inUpV) erythrocyte.setVein(outDownV);
 	else erythrocyte.setVein(outUpV);
 }
 

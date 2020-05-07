@@ -4,7 +4,6 @@
 #include "Destination.hpp"
 
 class Vein {
-	int id;
 	Coords startPos;
 	string directions;
 	Destination* destination;
@@ -12,19 +11,19 @@ class Vein {
 
 public:
 	mutex entranceMtx;
-	Vein(int id, Coords startPos, string directions);
+	Vein(Coords startPos, string directions);
 	~Vein() = default;
-	vector<char>::iterator getIterator();
 	char getDirection(int i);
 	Coords getStartPos();
+	Coords getEndPos();
 	int getId();
 	void setDestination(Destination* destination);
 	Destination* getDestination();
 	void draw();
 };
 
-Vein::Vein(int id, Coords startPos, string directions): 
-id(id), startPos(startPos), directions(directions) {
+Vein::Vein(Coords startPos, string directions): 
+startPos(startPos), directions(directions) {
 }
 
 char Vein::getDirection(int i) {
@@ -38,9 +37,19 @@ Coords Vein::getStartPos() {
 	return startPos;
 }
 
-int Vein::getId() {
+Coords Vein::getEndPos() {
 	lock_guard<mutex> lckd {dataAccessMtx};
-	return id;
+	Coords pos = startPos;
+	for (int i = 0; (size_t) i < directions.size(); ++i) {
+		switch (directions[i]) {
+			case 'u': --pos.line; break;
+			case 'd': ++pos.line; break;
+			case 'r': pos.col += 2; break;
+			case 'l': pos.col -= 2; break;
+		}
+	}
+
+	return pos;
 }
 
 void Vein::setDestination(Destination* destination) {
