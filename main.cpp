@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
 	Vein vHL{heart.outUpVPos(), "ruuuuuul"};
 	vHL.setDestination(&lungs);
 
-	Vein vHF{heart.outDownVPos(), "rdddddd"};
+	Vein vHF{heart.outDownVPos(), "rddddd"};
 	Fork fork;
 	vHF.setDestination(&fork);
 
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 
 	Vein vCJ{cell.vOutPos(), "l"};
 
-	Vein vJH{vCJ.getEndPos(), "uuuuuur"};
+	Vein vJH{vCJ.getEndPos(), "uuuuuurr"};
 	Junction junction{&vJH};
 	vJH.setDestination(&heart);
 	vCJ.setDestination(&junction);
@@ -52,7 +52,7 @@ int main(int argc, char* argv[])
 	vFC2.setDestination(&cell2);
 	fork.addVein(&vFC2);
 
-	Vein vC2J{cell2.vOutPos(), "luuuuuuu"};
+	Vein vC2J{cell2.vOutPos(), "lluuuuuuu"};
 	vC2J.setDestination(&junction);
 
 	lungs.setVeins(&vHL, &vLH);

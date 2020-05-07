@@ -49,6 +49,13 @@ Coords Vein::getEndPos() {
 		}
 	}
 
+	switch (directions[directions.size() - 1]) {
+		case 'u': --pos.line; break;
+		case 'd': ++pos.line; break;
+		case 'r': pos.col += 2; break;
+		case 'l': pos.col -= 2; break;
+	}
+
 	return pos;
 }
 

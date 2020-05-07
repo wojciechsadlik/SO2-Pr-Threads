@@ -68,7 +68,6 @@ bool Erythrocyte::move() {
 
 void Erythrocyte::operator()() {
 	while (true) {
-		this_thread::sleep_for(chrono::milliseconds(500));
 		bool veinEnd = move();
 		{
 			lock_guard<mutex> lckm {modifyableMtx};
@@ -81,6 +80,7 @@ void Erythrocyte::operator()() {
 
 		if (veinEnd) destination->interact(*this);
 		
+		this_thread::sleep_for(chrono::milliseconds(500));
 
 		{
 			lock_guard<mutex> lcke {endThreadsMtx};
