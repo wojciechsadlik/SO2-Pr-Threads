@@ -4,6 +4,8 @@
 #include "Destination.hpp"
 #include "Vein.hpp"
 #include "Oxygen.hpp"
+#include "Erythrocyte.hpp"
+#include "Leukocyte.hpp"
 
 class Lungs : public Destination{
 	Coords pos;
@@ -25,6 +27,7 @@ public:
 	void drawOxygen();
 	void refresh();
 	void interact(Erythrocyte& erythrocyte);
+	void interact(Leukocyte& Leukocyte);
 	Coords vOutPos();
 	void setVeins(Vein* vIn, Vein* vOut);
 };
@@ -88,18 +91,32 @@ void Lungs::drawOxygen() {
 	synch_wClearLine(win, 3, 1, WIN_COLS - 1);
 	synch_wClearLine(win, 4, 1, WIN_COLS - 1);
 
-	for (size_t i = 0; i < oxygen.size(); i++) {
+	int size = 0;
+	{
+		lock_guard<mutex> lck {oxygenMtx};
+		size = oxygen.size();
+	}
+
+	for (int i = 0; i < size; ++i) {
 		synch_mvwaddch(win, 3 + i / (WIN_COLS - 2), 1 + i % (WIN_COLS - 2), Color::OXYGEN, ' ');
 	}
 }
 
 void Lungs::interact(Erythrocyte& erythrocyte) {
-	if (oxygen.size() > 0) {
+	{
 		lock_guard<mutex> lck {oxygenMtx};
-		erythrocyte.takeOxygen(std::move(oxygen.back()));
-		oxygen.pop_back();
+		
+		if (oxygen.size() > 0) {
+			erythrocyte.takeOxygen(std::move(oxygen.back()));
+			oxygen.pop_back();
+		}
 	}
+	
 	erythrocyte.setVein(vOut);
+}
+
+void Lungs::interact(Leukocyte& leukocyte) {
+	leukocyte.setVein(vOut);
 }
 
 void Lungs::refresh() {

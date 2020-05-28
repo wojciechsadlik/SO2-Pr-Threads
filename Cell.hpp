@@ -22,6 +22,7 @@ public:
 	void processOxygen();
 	void operator()();
 	void interact(Erythrocyte& erythrocyte);
+	void interact(Leukocyte& leukocyte);
 	void setVeins(Vein* vIn, Vein* vOut);
 	Coords vOutPos();
 	void refresh();
@@ -91,6 +92,10 @@ void Cell::interact(Erythrocyte& erythrocyte) {
 	lock_guard<mutex> lckd {modifyableMtx};
 	oxygen = erythrocyte.giveOxygen();
 	erythrocyte.setVein(vOut);
+}
+
+void Cell::interact(Leukocyte& leukocyte) {
+	leukocyte.setVein(vOut);
 }
 
 void Cell::setVeins(Vein* vIn, Vein* vOut) {

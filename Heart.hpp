@@ -3,6 +3,8 @@
 #include "global.hpp"
 #include "Destination.hpp"
 #include "Vein.hpp"
+#include "Erythrocyte.hpp"
+#include "Leukocyte.hpp"
 
 class Heart : public Destination {
 	Coords pos;
@@ -22,6 +24,7 @@ public:
 	void refresh();
 	void addErythrocyte(Erythrocyte& erythrocyte);
 	void interact(Erythrocyte& erythrocyte);
+	void interact(Leukocyte& leukocyte);
 	void operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx);
 	Coords outUpVPos();
 	Coords outDownVPos();
@@ -61,6 +64,13 @@ void Heart::interact(Erythrocyte& erythrocyte) {
 	Vein* vein = erythrocyte.getVein();
 	if (vein == inUpV) erythrocyte.setVein(outDownV);
 	else erythrocyte.setVein(outUpV);
+}
+
+void Heart::interact(Leukocyte& leukocyte) {
+	lock_guard<mutex> lckm{modifyableMtx};
+	Vein* vein = leukocyte.getVein();
+	if (vein == inUpV) leukocyte.setVein(outDownV);
+	else leukocyte.setVein(outUpV);
 }
 
 void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx){
