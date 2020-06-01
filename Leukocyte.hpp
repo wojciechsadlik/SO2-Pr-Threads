@@ -63,7 +63,6 @@ void Leukocyte::operator()() {
 					entranceLck.release();
 			}
 		}
-		
 
 		if (veinEnd) destination->interact(*this);
 		

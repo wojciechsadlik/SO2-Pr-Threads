@@ -41,6 +41,11 @@ int randomTime(int a, int b) {		//zwraca liczbe calkowita losowa z przedzialu [a
 	return distribution(generator);
 }
 
+double random01() {
+	uniform_real_distribution<double> distribution(0,1);
+	return distribution(generator);
+}
+
 void initColors() {					//inicjalizuje pary kolorow
 	init_pair(Color::DEFAULT, COLOR_WHITE, COLOR_BLACK);
 	init_pair(Color::INHALE, COLOR_BLUE, COLOR_BLACK);

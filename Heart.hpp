@@ -22,10 +22,12 @@ public:
 	~Heart();
 	void setVeins(Vein* inUpV, Vein* inDownV, Vein* outUpV, Vein* rightDownV);
 	void refresh();
-	void addErythrocyte(Erythrocyte& erythrocyte);
+	void addBloodCell(Erythrocyte& erythrocyte);
+	void addBloodCell(Leukocyte& leukocyte);
 	void interact(Erythrocyte& erythrocyte);
 	void interact(Leukocyte& leukocyte);
-	void operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx);
+	void operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx,
+					forward_list<Leukocyte>* leukocytes, mutex* leukListMtx);
 	Coords outUpVPos();
 	Coords outDownVPos();
 };
@@ -54,9 +56,14 @@ void Heart::refresh() {
 	wrefresh(win);
 }
 
-void Heart::addErythrocyte(Erythrocyte& erythrocyte) {
+void Heart::addBloodCell(Erythrocyte& erythrocyte) {
 	lock_guard<mutex> lckm{modifyableMtx};
 	erythrocyte.setVein(outUpV);
+}
+
+void Heart::addBloodCell(Leukocyte& leukocyte) {
+	lock_guard<mutex> lckm{modifyableMtx};
+	leukocyte.setVein(outUpV);
 }
 
 void Heart::interact(Erythrocyte& erythrocyte) {
@@ -73,27 +80,42 @@ void Heart::interact(Leukocyte& leukocyte) {
 	else leukocyte.setVein(outUpV);
 }
 
-void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx){
+void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx,
+						forward_list<Leukocyte>* leukocytes, mutex* leukListMtx){
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "loading blood");
 
 	unique_lock<mutex> lckErL{*erListMtx};
-	auto it = erythrocytes->begin();
+	auto ite = erythrocytes->begin();
+	unique_lock<mutex> lckLeukL{*leukListMtx};
+	auto itl = leukocytes->begin();
 	while(true) {
 		if (!lckErL) lckErL.lock();
-		if (it == erythrocytes->end()) break;
-		Erythrocyte* er = &(*it);
-		++it;
-		lckErL.unlock();
-
-		addErythrocyte(*er);
+		if (!lckLeukL) lckLeukL.lock();
+		if (ite == erythrocytes->end() && itl == leukocytes->end()) break;
+		
+		if (random01() > 0.2 && ite != erythrocytes->end()) {
+			Erythrocyte* er = &(*ite);
+			++ite;
+			lckErL.unlock();
+			lckLeukL.unlock();
+			addBloodCell(*er);
+		} else if (itl != leukocytes->end()) {
+			Leukocyte* leuk = &(*itl);
+			++itl;
+			lckErL.unlock();
+			lckLeukL.unlock();
+			addBloodCell(*leuk);
+		}
+		
 
 		{
-			lock_guard<mutex> lck {endThreadsMtx};
+			lock_guard<mutex> lcke {endThreadsMtx};
 			if (endThreads) break;
 		}
 	}
 	
 	if (lckErL) lckErL.unlock();
+	if (lckLeukL) lckLeukL.unlock();
 
 	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "loading ended");

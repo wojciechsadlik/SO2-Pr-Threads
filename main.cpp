@@ -1,5 +1,6 @@
 #include "global.hpp"
 #include "Erythrocyte.hpp"
+#include "Leukocyte.hpp"
 #include "Vein.hpp"
 #include "Lungs.hpp"
 #include "Heart.hpp"
@@ -65,6 +66,11 @@ int main(int argc, char* argv[])
 	for (int i = 15; i > 0; --i)
 		erythrocytes.emplace_front(i);
 
+	mutex leukListMtx;
+	forward_list<Leukocyte> leukocytes;
+	for (int i = 4; i > 0; --i)
+		leukocytes.emplace_front(i);
+
 	thread lungsThd(ref(lungs));
 	thread cellThd(ref(cell));
 	thread cell2Thd(ref(cell2));
@@ -73,7 +79,11 @@ int main(int argc, char* argv[])
 	for (auto& er : erythrocytes)
 		erThds.emplace_front(ref(er));
 
-	thread heartThd(ref(heart), &erythrocytes, &erListMtx);
+	forward_list<thread> leukThds;
+	for (auto& leuk : leukocytes)
+		leukThds.emplace_front(ref(leuk));
+
+	thread heartThd(ref(heart), &erythrocytes, &erListMtx, &leukocytes, &leukListMtx);
 
 	while (getch() != ESC) {
 		vLH.draw();
@@ -89,6 +99,12 @@ int main(int argc, char* argv[])
 			lock_guard<mutex> lckErL{erListMtx};
 			for (auto& er : erythrocytes)
 				er.draw();
+		}
+
+		{
+			lock_guard<mutex> lckLeukL{leukListMtx};
+			for (auto& leuk : leukocytes)
+				leuk.draw();
 		}
 			
 		refresh();
@@ -118,6 +134,11 @@ int main(int argc, char* argv[])
 
 	for (auto& erThd : erThds) {
 		erThd.join();
+		refresh();
+	}
+
+	for (auto& leukThd : leukThds) {
+		leukThd.join();
 		refresh();
 	}
 
