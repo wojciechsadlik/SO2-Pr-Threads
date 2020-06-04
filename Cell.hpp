@@ -117,9 +117,8 @@ void Cell::processOxygen() {
 		}
 	}
 	for (int i = 1; i < WIN_COLS - 1; ++i) {					//pasek postepu
-		bool orderLeuk = false;
 		{
-			lock_guard<mutex> lckd {modifyableMtx};
+			unique_lock<mutex> lckd {modifyableMtx};
 			lock_guard<mutex> lcki {illnessMtx};
 			if (oxygen != nullptr) {
 				synch_wClearLine(win, 2, 1, WIN_COLS - 1);
@@ -134,15 +133,13 @@ void Cell::processOxygen() {
 				synch_mvwprintw(win, 1, 1, Color::CELL_ILL, "processing");
 				if (!leukocyteOrdered) {
 					taskTime /= 2;
-					orderLeuk = true;
+					lckd.unlock();
+					orderLeukocyte();
 				}
 			} else {
 				synch_mvwprintw(win, 1, 1, Color::DEFAULT, "processing");
 			}
 		}
-
-		if (orderLeuk)
-			orderLeukocyte();
 
 		synch_mvwaddch(win, 2, i, '*');
 		this_thread::sleep_for(taskTime / WIN_COLS);
