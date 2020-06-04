@@ -4,6 +4,7 @@
 #include "Destination.hpp"
 #include "Vein.hpp"
 #include "Oxygen.hpp"
+#include "Fork.hpp"
 
 class Cell: public Destination {
 	int id;
@@ -15,6 +16,8 @@ class Cell: public Destination {
 	Vein* vOut {nullptr};
 	unique_ptr<Oxygen> oxygen {nullptr};
 	mutex modifyableMtx;
+	list<Fork*> forks;
+	bool leukocyteOrdered {false};
 
 public:
 	mutex illnessMtx;
@@ -23,6 +26,9 @@ public:
 	Cell(int id, Coords pos);
 	~Cell();
 	int getId();
+	void setForks(list<Fork*> forks);
+	void orderErythrocyte();
+	void orderLeukocyte();
 	void waitForOxygen();
 	void processOxygen();
 	void operator()();
@@ -45,7 +51,28 @@ Cell::~Cell() {
 }
 
 int Cell::getId() {
+	lock_guard<mutex> lckd {modifyableMtx};
 	return id;
+}
+
+void Cell::setForks(list<Fork*> forks) {
+	lock_guard<mutex> lckd {modifyableMtx};
+	this->forks = forks;
+}
+
+void Cell::orderErythrocyte() {
+	lock_guard<mutex> lckd {modifyableMtx};
+	for (auto f : forks) {
+		f->orderErythrocyte(id);
+	}
+}
+
+void Cell::orderLeukocyte() {
+	lock_guard<mutex> lckd {modifyableMtx};
+	for (auto f : forks) {
+		f->orderLeukocyte(id);
+	}
+	leukocyteOrdered = true;
 }
 
 void Cell::waitForOxygen() {
@@ -60,8 +87,11 @@ void Cell::waitForOxygen() {
 		}
 		{
 			lock_guard<mutex> lck {illnessMtx};
-			if (illness)
+			if (illness) {
 				synch_mvwprintw(win, 1, 1, Color::CELL_ILL, "waiting");
+				if (!leukocyteOrdered)
+					orderLeukocyte();
+			}
 			else
 				synch_mvwprintw(win, 1, 1, Color::DEFAULT, "waiting");
 		}
@@ -101,10 +131,13 @@ void Cell::processOxygen() {
 
 			if (illness) {
 				synch_mvwprintw(win, 1, 1, Color::CELL_ILL, "processing");
+				if (!leukocyteOrdered)
+					orderLeukocyte();
 			} else {
 				synch_mvwprintw(win, 1, 1, Color::DEFAULT, "processing");
 			}
 		}
+
 		synch_mvwaddch(win, 2, i, '*');
 		this_thread::sleep_for(taskTime / WIN_COLS);
 		
@@ -115,6 +148,7 @@ void Cell::processOxygen() {
 
 void Cell::operator()() {
 	while (true) {
+		orderErythrocyte();
 		waitForOxygen();
 		processOxygen();
 
@@ -142,6 +176,7 @@ void Cell::interact(Leukocyte& leukocyte) {
 		if (illness) {
 			illness = false;
 			illnesscv.notify_one();
+			leukocyteOrdered = false;
 		}
 	}
 	leukocyte.setVein(vOut);

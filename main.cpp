@@ -30,6 +30,9 @@ int main(int argc, char* argv[])
 	Cell cell2{2, Coords{25, TERM_COLS / 3}};
 	Bacteria bacteria1{1, &cell1};
 	Bacteria bacteria2{2, &cell2};
+	Fork fork;
+	cell1.setForks(list<Fork*> {&fork});
+	cell2.setForks(list<Fork*> {&fork});
 
 	Vein vLH{lungs.vOutPos(), "lddddddr"};
 	vLH.setDestination(&heart);
@@ -38,7 +41,6 @@ int main(int argc, char* argv[])
 	vHL.setDestination(&lungs);
 
 	Vein vHF{heart.outDownVPos(), "rddddd"};
-	Fork fork;
 	vHF.setDestination(&fork);
 
 	Vein vFC{vHF.getEndPos(), "l"};

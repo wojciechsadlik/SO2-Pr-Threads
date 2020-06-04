@@ -7,18 +7,19 @@
 #include "Leukocyte.hpp"
 
 class Fork: public Destination {
-	//vector<Vein*> vOuts;
-	//int state {0};
 	vector<int> keys;
 	map<int, Vein*> vOuts;
 	queue<int> leukocyteOrders;
 	queue<int> erythrocyteOrders;
+	mutex accessMtx;
 	
 public:
 	Fork() = default;
 	~Fork() = default;
 	void addVein(int id, Vein* vein);
 	int getRandomKey();
+	void orderErythrocyte(int id);
+	void orderLeukocyte(int id);
 	void interact(Erythrocyte& erythrocyte);
 	void interact(Leukocyte& leukocyte);
 };
@@ -32,22 +33,32 @@ int Fork::getRandomKey() {
 	return keys[randomInt(0, keys.size() - 1)];
 }
 
-void Fork::interact(Erythrocyte& erythrocyte) {
-	// erythrocyte.setVein(vOuts[state]);
+void Fork::orderErythrocyte(int id) {
+	lock_guard<mutex> lck{accessMtx};
+	erythrocyteOrders.push(id);
+}
 
-	// if (vOuts.size() != (size_t) 0)
-	// 	state = (state + 1) % vOuts.size();
-	if (erythrocyteOrders.empty()) {
+void Fork::orderLeukocyte(int id) {
+	lock_guard<mutex> lck{accessMtx};
+	leukocyteOrders.push(id);
+}
+
+void Fork::interact(Erythrocyte& erythrocyte) {
+	lock_guard<mutex> lck{accessMtx};
+	if (!erythrocyteOrders.empty()) {
+		erythrocyte.setVein(vOuts[erythrocyteOrders.front()]);
+		erythrocyteOrders.pop();
+	} else {
 		erythrocyte.setVein(vOuts[getRandomKey()]);
 	}
 }
 
 void Fork::interact(Leukocyte& leukocyte) {
-	// leukocyte.setVein(vOuts[state]);
-
-	// if (vOuts.size() != (size_t) 0)
-	// 	state = (state + 1) % vOuts.size();
-	if (leukocyteOrders.empty()) {
+	lock_guard<mutex> lck{accessMtx};
+	if (!leukocyteOrders.empty()) {
+		leukocyte.setVein(vOuts[leukocyteOrders.front()]);
+		leukocyteOrders.pop();
+	} else {
 		leukocyte.setVein(vOuts[getRandomKey()]);
 	}
 }
