@@ -16,6 +16,7 @@ class Heart : public Destination {
 	Vein* outUpV {nullptr};
 	Vein* outDownV {nullptr};
 	mutex modifyableMtx;
+	const int PERIOD {500};
 
 public:
 	Heart(Coords pos);
@@ -122,7 +123,7 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 		if (lckLeukL) lckLeukL.unlock();
 
 		beatcv.notify_all();
-		this_thread::sleep_for(chrono::milliseconds(500));
+		this_thread::sleep_for(chrono::milliseconds(PERIOD));
 
 		{
 			lock_guard<mutex> lcke {endThreadsMtx};
@@ -145,9 +146,9 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 		beatcv.notify_all();
 
 		synch_mvwprintw(win, 3, WIN_COLS / 2 - 1, Color::DEFAULT, "***");
-		this_thread::sleep_for(chrono::milliseconds(250));
+		this_thread::sleep_for(chrono::milliseconds(PERIOD / 2));
 		synch_wClearLine(win, 3, 1, WIN_COLS - 1);
-		this_thread::sleep_for(chrono::milliseconds(250));
+		this_thread::sleep_for(chrono::milliseconds(PERIOD / 2));
 	}
 	beatcv.notify_all();
 
