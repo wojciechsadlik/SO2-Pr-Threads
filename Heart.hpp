@@ -85,9 +85,9 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 						forward_list<Leukocyte>* leukocytes, mutex* leukListMtx){
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "loading blood");
 
-	float erProb = 1;
+	double erProb = 1;
 	if (ER_COUNT > 0 && LEUK_COUNT > 0) {
-		erProb = (float) ER_COUNT / (ER_COUNT + LEUK_COUNT);
+		erProb = (double) ER_COUNT / (ER_COUNT + LEUK_COUNT);
 	} else if (ER_COUNT > 0) {
 		erProb = 1;
 	} else {

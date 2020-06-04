@@ -21,8 +21,8 @@ const int ESC = 27;
 const int TERM_LINES = 24;
 const int TERM_COLS = 80;
 
-const int ER_COUNT = 15;
-const int LEUK_COUNT = 5;
+const int ER_COUNT = 14;
+const int LEUK_COUNT = 6;
 
 enum Color	{DEFAULT,
 			INHALE,

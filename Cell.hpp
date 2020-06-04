@@ -119,20 +119,27 @@ void Cell::processOxygen() {
 	for (int i = 1; i < WIN_COLS - 1; ++i) {					//pasek postepu
 		{
 			lock_guard<mutex> lckd {modifyableMtx};
-			lock_guard<mutex> lcki {illnessMtx};
 			if (oxygen != nullptr) {
 				synch_wClearLine(win, 2, 1, WIN_COLS - 1);
 				i = 1;
 				oxygen.release();
 				taskTime = randomTime(TASK_TIME_LB, TASK_TIME_UB);
-				if (illness)
-					taskTime /= 2;
+				{
+					lock_guard<mutex> lcki {illnessMtx};
+					if (illness)
+						taskTime /= 2;
+				}
 			}
+		}
 
+		{
+			lock_guard<mutex> lcki {illnessMtx};
 			if (illness) {
 				synch_mvwprintw(win, 1, 1, Color::CELL_ILL, "processing");
-				if (!leukocyteOrdered)
+				if (!leukocyteOrdered) {
 					orderLeukocyte();
+					taskTime /= 2;
+				}
 			} else {
 				synch_mvwprintw(win, 1, 1, Color::DEFAULT, "processing");
 			}

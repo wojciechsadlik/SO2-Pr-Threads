@@ -72,11 +72,6 @@ void Erythrocyte::operator()() {
 		beatcv.wait(lckb);
 		lckb.unlock();
 
-		{
-			lock_guard<mutex> lcke {endThreadsMtx};
-			if (endThreads) break;
-		}
-
 		bool veinEnd = move();
 
 		{
@@ -85,6 +80,11 @@ void Erythrocyte::operator()() {
 					entranceLck.unlock();
 					entranceLck.release();
 			}
+		}
+
+		{
+			lock_guard<mutex> lcke {endThreadsMtx};
+			if (endThreads) break;
 		}
 
 		if (veinEnd) destination->interact(*this);
