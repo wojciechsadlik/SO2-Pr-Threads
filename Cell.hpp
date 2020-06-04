@@ -6,6 +6,7 @@
 #include "Oxygen.hpp"
 
 class Cell: public Destination {
+	int id;
 	Coords pos;
 	const int WIN_LINES {6};
 	const int WIN_COLS {17};
@@ -19,8 +20,9 @@ public:
 	mutex illnessMtx;
 	condition_variable illnesscv;
 	bool illness;
-	Cell(Coords pos);
+	Cell(int id, Coords pos);
 	~Cell();
+	int getId();
 	void waitForOxygen();
 	void processOxygen();
 	void operator()();
@@ -31,7 +33,7 @@ public:
 	void refresh();
 };
 
-Cell::Cell(Coords pos): pos(pos) {
+Cell::Cell(int id, Coords pos): id(id), pos(pos) {
 	illness = false;
 	win = newwin(WIN_LINES, WIN_COLS, pos.line, pos.col);
 	box(win, 0, 0);
@@ -40,6 +42,10 @@ Cell::Cell(Coords pos): pos(pos) {
 
 Cell::~Cell() {
 	delwin(win);
+}
+
+int Cell::getId() {
+	return id;
 }
 
 void Cell::waitForOxygen() {

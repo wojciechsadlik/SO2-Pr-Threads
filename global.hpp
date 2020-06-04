@@ -11,6 +11,8 @@
 #include <vector>
 #include <list>
 #include <forward_list>
+#include <map>
+#include <queue>
 #include "Coords.hpp"
 using namespace std;
 
@@ -51,6 +53,11 @@ default_random_engine generator;
 chrono::milliseconds randomTime(int a, int b) {		//zwraca losowy czas z przedzialu [a,b] w ms
 	uniform_int_distribution<int> distribution(a, b);
 	return chrono::milliseconds {distribution(generator)};
+}
+
+int randomInt(int a, int b) {					//zwraca liczbe losowa calkowita z przedzialu [a,b]
+	uniform_int_distribution<int> distribution(a, b);
+	return distribution(generator);
 }
 
 double random01() {

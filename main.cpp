@@ -26,10 +26,10 @@ int main(int argc, char* argv[])
 
 	Lungs lungs{Coords{1, TERM_COLS / 3}};
 	Heart heart{Coords{9, TERM_COLS / 3}};
-	Cell cell1{Coords{17, TERM_COLS / 3}};
-	Cell cell2{Coords{25, TERM_COLS / 3}};
-	Bacteria bacteria1{0, &cell1};
-	Bacteria bacteria2{1, &cell2};
+	Cell cell1{1, Coords{17, TERM_COLS / 3}};
+	Cell cell2{2, Coords{25, TERM_COLS / 3}};
+	Bacteria bacteria1{1, &cell1};
+	Bacteria bacteria2{2, &cell2};
 
 	Vein vLH{lungs.vOutPos(), "lddddddr"};
 	vLH.setDestination(&heart);
@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
 
 	Vein vFC{vHF.getEndPos(), "l"};
 	vFC.setDestination(&cell1);
-	fork.addVein(&vFC);
+	fork.addVein(cell1.getId(), &vFC);
 
 	Vein vCJ{cell1.vOutPos(), "l"};
 
@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
 
 	Vein vFC2{vHF.getEndPos(), "ddddddddl"};
 	vFC2.setDestination(&cell2);
-	fork.addVein(&vFC2);
+	fork.addVein(cell2.getId(), &vFC2);
 
 	Vein vC2J{cell2.vOutPos(), "lluuuuuuu"};
 	vC2J.setDestination(&junction);
