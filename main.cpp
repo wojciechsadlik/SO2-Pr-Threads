@@ -24,7 +24,7 @@ int main(int argc, char* argv[])
 
 	refresh();
 
-	Lungs lungs{Coords{1, TERM_COLS / 3,}};
+	Lungs lungs{Coords{1, TERM_COLS / 3}};
 	Heart heart{Coords{9, TERM_COLS / 3}};
 	Cell cell1{Coords{17, TERM_COLS / 3}};
 	Cell cell2{Coords{25, TERM_COLS / 3}};
