@@ -103,16 +103,18 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 			if (!lckErL) lckErL.lock();
 			if (!lckLeukL) lckLeukL.lock();
 			if (ite == erythrocytes->end() && itl == leukocytes->end()) break;
-		
+
 			if ((random01() <= erProb || itl == leukocytes->end()) && ite != erythrocytes->end()) {
 				Erythrocyte* er = &(*ite);
 				++ite;
+				erProb -= (double) 1 / (ER_COUNT + LEUK_COUNT);
 				lckErL.unlock();
 				lckLeukL.unlock();
 				addBloodCell(*er);
 			} else if (itl != leukocytes->end()) {
 				Leukocyte* leuk = &(*itl);
 				++itl;
+				erProb += (double) 1 / (ER_COUNT + LEUK_COUNT);
 				lckErL.unlock();
 				lckLeukL.unlock();
 				addBloodCell(*leuk);
