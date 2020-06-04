@@ -84,6 +84,15 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 						forward_list<Leukocyte>* leukocytes, mutex* leukListMtx){
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "loading blood");
 
+	float erProb = 1;
+	if (ER_COUNT > 0 && LEUK_COUNT > 0) {
+		erProb = (float) ER_COUNT / (ER_COUNT + LEUK_COUNT);
+	} else if (ER_COUNT > 0) {
+		erProb = 1;
+	} else {
+		erProb = 0;
+	}
+
 	unique_lock<mutex> lckErL{*erListMtx};
 	auto ite = erythrocytes->begin();
 	unique_lock<mutex> lckLeukL{*leukListMtx};
@@ -92,8 +101,9 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 		if (!lckErL) lckErL.lock();
 		if (!lckLeukL) lckLeukL.lock();
 		if (ite == erythrocytes->end() && itl == leukocytes->end()) break;
+
 		
-		if (random01() > 0.2 && ite != erythrocytes->end()) {
+		if (random01() <= erProb && ite != erythrocytes->end()) {
 			Erythrocyte* er = &(*ite);
 			++ite;
 			lckErL.unlock();
@@ -107,7 +117,6 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 			addBloodCell(*leuk);
 		}
 		
-
 		{
 			lock_guard<mutex> lcke {endThreadsMtx};
 			if (endThreads) break;

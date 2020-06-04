@@ -63,12 +63,12 @@ int main(int argc, char* argv[])
 
 	mutex erListMtx;
 	forward_list<Erythrocyte> erythrocytes;
-	for (int i = 15; i > 0; --i)
+	for (int i = ER_COUNT; i > 0; --i)
 		erythrocytes.emplace_front(i);
 
 	mutex leukListMtx;
 	forward_list<Leukocyte> leukocytes;
-	for (int i = 4; i > 0; --i)
+	for (int i = LEUK_COUNT; i > 0; --i)
 		leukocytes.emplace_front(i);
 
 	thread lungsThd(ref(lungs));
