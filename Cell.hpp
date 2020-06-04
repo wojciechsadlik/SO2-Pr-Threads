@@ -115,6 +115,9 @@ void Cell::operator()() {
 		lock_guard<mutex> lck {endThreadsMtx};
 		if (endThreads) break;
 	}
+
+	illnesscv.notify_one();
+	
 	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
 	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "ended");

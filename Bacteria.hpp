@@ -29,10 +29,14 @@ Bacteria::~Bacteria() {
 
 void Bacteria::sleep() {
 	synch_mvwprintw(win, 0, 1, Color::BACTERIA_SLEEP, "bacteria%d: sleep", id);
-	chrono::milliseconds taskTime {randomTime(TASK_TIME_LB, TASK_TIME_UB)};		//czas snu - [2.5s, 3.5s]
+	chrono::milliseconds taskTime {randomTime(TASK_TIME_LB, 2 * TASK_TIME_UB)};		//czas snu - [2.5s, 2 * 3.5s]
 	for (int i = 1; i < COLS; ++i) {					//pasek postepu
 		synch_mvwaddch(win, 1, i, '*');
 		this_thread::sleep_for(taskTime / COLS);
+		{
+			lock_guard<mutex> lck {endThreadsMtx};
+			if (endThreads) break;
+		}
 	}
 	synch_wClearLine(win, 0, 1, COLS);
 	synch_wClearLine(win, 1, 1, COLS);
@@ -55,8 +59,7 @@ void Bacteria::operator()() {
 			if (endThreads) break;
 		}
 
-		if (random01() < 0.5)
-			attack();
+		attack();
 	}
 	synch_wClearLine(win, 0, 1, COLS);
 	synch_mvwprintw(win, 0, 1, Color::DEFAULT, "ended");
