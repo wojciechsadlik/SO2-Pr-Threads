@@ -29,7 +29,11 @@ enum Color	{DEFAULT,
 			VEIN,
 			ERYTHROCYTE_O,
 			ERYTHROCYTE_NO,
-			LEUKOCYTE};
+			LEUKOCYTE,
+			BACTERIA,
+			BACTERIA_SLEEP,
+			BACTERIA_ATTACK,
+			CELL_ATTACKED};
 
 const int TASK_TIME_LB = 2500;
 const int TASK_TIME_UB = 3500;
@@ -63,6 +67,10 @@ void initColors() {					//inicjalizuje pary kolorow
 	init_pair(Color::ERYTHROCYTE_O, COLOR_WHITE, COLOR_RED);
 	init_pair(Color::ERYTHROCYTE_NO, COLOR_WHITE, COLOR_BLUE);
 	init_pair(Color::LEUKOCYTE, COLOR_BLACK, COLOR_WHITE);
+	init_pair(Color::BACTERIA, COLOR_GREEN, COLOR_BLACK);
+	init_pair(Color::BACTERIA_SLEEP, COLOR_GREEN, COLOR_BLACK);
+	init_pair(Color::BACTERIA_ATTACK, COLOR_GREEN, COLOR_BLACK);
+	init_pair(Color::CELL_ATTACKED, COLOR_BLACK, COLOR_GREEN);
 }
 
 /* wClearLine, mvwprintw, mvwaddch synchronizowane przez blokowanie mutex printMtx */
