@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 	Cell cell{Coords{17, TERM_COLS / 3}};
 	Cell cell2{Coords{25, TERM_COLS / 3}};
 	Bacteria bacteria1{0, &cell};
-	//Bacteria bacteria2{1, &cell2};
+	Bacteria bacteria2{1, &cell2};
 
 	Vein vLH{lungs.vOutPos(), "lddddddr"};
 	vLH.setDestination(&heart);
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 	thread cellThd(ref(cell));
 	thread cell2Thd(ref(cell2));
 	thread bacteria1Thd(ref(bacteria1));
-	//thread bacteria2Thd(ref(bacteria2));
+	thread bacteria2Thd(ref(bacteria2));
 
 	forward_list<thread> erThds;
 	for (auto& er : erythrocytes)
@@ -117,6 +117,8 @@ int main(int argc, char* argv[])
 		heart.refresh();
 		cell.refresh();
 		cell2.refresh();
+		bacteria1.refresh();
+		bacteria2.refresh();
 		this_thread::sleep_for(chrono::milliseconds{20});
 	}
 
@@ -126,7 +128,7 @@ int main(int argc, char* argv[])
 	}
 
 	bacteria1Thd.join();
-	//bacteria2Thd.join();
+	bacteria2Thd.join();
 
 	heartThd.join();
 	heart.refresh();
