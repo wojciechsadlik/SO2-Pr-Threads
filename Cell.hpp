@@ -117,7 +117,7 @@ void Cell::operator()() {
 	}
 
 	illnesscv.notify_one();
-	
+
 	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
 	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "ended");
@@ -133,8 +133,10 @@ void Cell::interact(Leukocyte& leukocyte) {
 	lock_guard<mutex> lckd {modifyableMtx};
 	{
 		lock_guard<mutex> lck {illnessMtx};
-		illness = false;
-		illnesscv.notify_one();
+		if (illness) {
+			illness = false;
+			illnesscv.notify_one();
+		}
 	}
 	leukocyte.setVein(vOut);
 }

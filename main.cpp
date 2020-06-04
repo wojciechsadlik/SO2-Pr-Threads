@@ -26,9 +26,9 @@ int main(int argc, char* argv[])
 
 	Lungs lungs{Coords{1, TERM_COLS / 3,}};
 	Heart heart{Coords{9, TERM_COLS / 3}};
-	Cell cell{Coords{17, TERM_COLS / 3}};
+	Cell cell1{Coords{17, TERM_COLS / 3}};
 	Cell cell2{Coords{25, TERM_COLS / 3}};
-	Bacteria bacteria1{0, &cell};
+	Bacteria bacteria1{0, &cell1};
 	Bacteria bacteria2{1, &cell2};
 
 	Vein vLH{lungs.vOutPos(), "lddddddr"};
@@ -42,10 +42,10 @@ int main(int argc, char* argv[])
 	vHF.setDestination(&fork);
 
 	Vein vFC{vHF.getEndPos(), "l"};
-	vFC.setDestination(&cell);
+	vFC.setDestination(&cell1);
 	fork.addVein(&vFC);
 
-	Vein vCJ{cell.vOutPos(), "l"};
+	Vein vCJ{cell1.vOutPos(), "l"};
 
 	Vein vJH{vCJ.getEndPos(), "uuuuuurr"};
 	Junction junction{&vJH};
@@ -61,7 +61,7 @@ int main(int argc, char* argv[])
 
 	lungs.setVeins(&vHL, &vLH);
 	heart.setVeins(&vLH, &vJH, &vHL, &vHF);
-	cell.setVeins(&vFC, &vCJ);
+	cell1.setVeins(&vFC, &vCJ);
 	cell2.setVeins(&vFC2, &vC2J);
 
 	mutex erListMtx;
@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 		leukocytes.emplace_front(i);
 
 	thread lungsThd(ref(lungs));
-	thread cellThd(ref(cell));
+	thread cell1Thd(ref(cell1));
 	thread cell2Thd(ref(cell2));
 	thread bacteria1Thd(ref(bacteria1));
 	thread bacteria2Thd(ref(bacteria2));
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 		refresh();
 		lungs.refresh();
 		heart.refresh();
-		cell.refresh();
+		cell1.refresh();
 		cell2.refresh();
 		bacteria1.refresh();
 		bacteria2.refresh();
@@ -127,20 +127,23 @@ int main(int argc, char* argv[])
 		endThreads = true;
 	}
 
-	bacteria1Thd.join();
-	bacteria2Thd.join();
-
 	heartThd.join();
 	heart.refresh();
 
 	lungsThd.join();
 	lungs.refresh();
 
-	cellThd.join();
-	cell.refresh();
+	cell1Thd.join();
+	cell1.refresh();
 
 	cell2Thd.join();
 	cell2.refresh();
+
+	bacteria1Thd.join();
+	bacteria1.refresh();
+
+	bacteria2Thd.join();
+	bacteria2.refresh();
 
 	for (auto& erThd : erThds) {
 		erThd.join();
