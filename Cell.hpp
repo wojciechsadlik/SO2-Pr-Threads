@@ -16,6 +16,9 @@ class Cell: public Destination {
 	mutex modifyableMtx;
 
 public:
+	mutex illnessMtx;
+	condition_variable illnesscv;
+	bool illness;
 	Cell(Coords pos);
 	~Cell();
 	void waitForOxygen();
@@ -29,6 +32,7 @@ public:
 };
 
 Cell::Cell(Coords pos): pos(pos) {
+	illness = false;
 	win = newwin(WIN_LINES, WIN_COLS, pos.line, pos.col);
 	box(win, 0, 0);
 	mvwprintw(win, 0, 0, "Cell");
@@ -42,11 +46,22 @@ void Cell::waitForOxygen() {
 	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
 	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "waiting");
+	
 	while (true) {
 		{
 			lock_guard<mutex> lckd {modifyableMtx};
 			if (oxygen != nullptr) break;
 		}
+		{
+			lock_guard<mutex> lck {illnessMtx};
+			if (illness)
+				synch_mvwprintw(win, 1, 1, Color::CELL_ILL, "waiting");
+			else
+				synch_mvwprintw(win, 1, 1, Color::DEFAULT, "waiting");
+		}
+
+		this_thread::sleep_for(chrono::milliseconds{500});
+
 		lock_guard<mutex> lcke {endThreadsMtx};
 		if (endThreads) return;
 	}
@@ -58,13 +73,30 @@ void Cell::processOxygen() {
 	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "processing");
 	chrono::milliseconds taskTime {randomTime(TASK_TIME_LB, TASK_TIME_UB)};		//czas snu - [2.5s, 3.5s]
+	{
+		lock_guard<mutex> lck {illnessMtx};
+		if (illness) {
+			taskTime /= 2;
+			synch_mvwprintw(win, 1, 1, Color::CELL_ILL, "processing");
+		}
+	}
 	for (int i = 1; i < WIN_COLS - 1; ++i) {					//pasek postepu
 		{
 			lock_guard<mutex> lckd {modifyableMtx};
+			lock_guard<mutex> lcki {illnessMtx};
 			if (oxygen != nullptr) {
 				synch_wClearLine(win, 2, 1, WIN_COLS - 1);
 				i = 1;
 				oxygen.release();
+				taskTime = randomTime(TASK_TIME_LB, TASK_TIME_UB);
+				if (illness)
+					taskTime /= 2;
+			}
+
+			if (illness) {
+				synch_mvwprintw(win, 1, 1, Color::CELL_ILL, "processing");
+			} else {
+				synch_mvwprintw(win, 1, 1, Color::DEFAULT, "processing");
 			}
 		}
 		synch_mvwaddch(win, 2, i, '*');
@@ -95,6 +127,12 @@ void Cell::interact(Erythrocyte& erythrocyte) {
 }
 
 void Cell::interact(Leukocyte& leukocyte) {
+	lock_guard<mutex> lckd {modifyableMtx};
+	{
+		lock_guard<mutex> lck {illnessMtx};
+		illness = false;
+		illnesscv.notify_one();
+	}
 	leukocyte.setVein(vOut);
 }
 

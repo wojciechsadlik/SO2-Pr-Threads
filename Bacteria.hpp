@@ -5,17 +5,18 @@
 
 class Bacteria {
 	int id {0};
+	Cell* cell;
 	int line;
 	const int COLS {21};
 public:
-	Bacteria(int id);
+	Bacteria(int id, Cell* cell);
 	~Bacteria() = default;
 	void sleep();
 	void attack();
 	void operator()();
 };
 
-Bacteria::Bacteria(int id): id(id) {
+Bacteria::Bacteria(int id, Cell* cell): id(id), cell(cell) {
 	this->line = 2 * id;
 }
 
@@ -34,6 +35,9 @@ void Bacteria::sleep() {
 void Bacteria::attack() {
 	synch_wClearLine(stdscr, line, 1, COLS);
 	synch_mvwprintw(stdscr, line, 1, Color::BACTERIA_ATTACK, "bacteria%d: attacking", id);
+	unique_lock<mutex> lck {cell->illnessMtx};
+	cell->illness = true;
+	cell->illnesscv.wait(lck);
 }
 
 void Bacteria::operator()() {

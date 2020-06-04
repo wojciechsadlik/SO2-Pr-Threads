@@ -33,7 +33,7 @@ enum Color	{DEFAULT,
 			BACTERIA,
 			BACTERIA_SLEEP,
 			BACTERIA_ATTACK,
-			CELL_ATTACKED};
+			CELL_ILL};
 
 const int TASK_TIME_LB = 2500;
 const int TASK_TIME_UB = 3500;
@@ -48,9 +48,9 @@ mutex printMtx;		//do synchronizacji pisania na ekran
 
 default_random_engine generator;
 
-int randomTime(int a, int b) {		//zwraca liczbe calkowita losowa z przedzialu [a,b]
+chrono::milliseconds randomTime(int a, int b) {		//zwraca liczbe calkowita losowa z przedzialu [a,b]
 	uniform_int_distribution<int> distribution(a, b);
-	return distribution(generator);
+	return chrono::milliseconds {distribution(generator)};
 }
 
 double random01() {
@@ -70,7 +70,7 @@ void initColors() {					//inicjalizuje pary kolorow
 	init_pair(Color::BACTERIA, COLOR_GREEN, COLOR_BLACK);
 	init_pair(Color::BACTERIA_SLEEP, COLOR_GREEN, COLOR_BLACK);
 	init_pair(Color::BACTERIA_ATTACK, COLOR_GREEN, COLOR_BLACK);
-	init_pair(Color::CELL_ATTACKED, COLOR_BLACK, COLOR_GREEN);
+	init_pair(Color::CELL_ILL, COLOR_BLACK, COLOR_GREEN);
 }
 
 /* wClearLine, mvwprintw, mvwaddch synchronizowane przez blokowanie mutex printMtx */
