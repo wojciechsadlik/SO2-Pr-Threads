@@ -65,7 +65,6 @@ void Leukocyte::operator()() {
 			lock_guard<mutex> lckm {modifyableMtx};
 			if (nextDirection > 1 && entranceLck) {
 					entranceLck.unlock();
-					entranceLck.release();
 			}
 		}
 
@@ -79,7 +78,6 @@ void Leukocyte::operator()() {
 
 	if (entranceLck) {
 		entranceLck.unlock();
-		entranceLck.release();
 	}
 
 	synch_mvwprintw(stdscr, pos.line, pos.col, Color::DEFAULT, "%02d", id);

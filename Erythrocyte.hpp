@@ -78,7 +78,6 @@ void Erythrocyte::operator()() {
 			lock_guard<mutex> lckm {modifyableMtx};
 			if (nextDirection > 1 && entranceLck) {
 					entranceLck.unlock();
-					entranceLck.release();
 			}
 		}
 
@@ -92,7 +91,6 @@ void Erythrocyte::operator()() {
 
 	if (entranceLck) {
 		entranceLck.unlock();
-		entranceLck.release();
 	}
 
 	synch_mvwprintw(stdscr, pos.line, pos.col, Color::DEFAULT, "%02d", id);
