@@ -48,7 +48,7 @@ mutex printMtx;		//do synchronizacji pisania na ekran
 
 default_random_engine generator;
 
-chrono::milliseconds randomTime(int a, int b) {		//zwraca liczbe calkowita losowa z przedzialu [a,b]
+chrono::milliseconds randomTime(int a, int b) {		//zwraca losowy czas z przedzialu [a,b] w ms
 	uniform_int_distribution<int> distribution(a, b);
 	return chrono::milliseconds {distribution(generator)};
 }
