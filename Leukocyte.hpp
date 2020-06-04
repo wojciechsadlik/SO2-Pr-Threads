@@ -55,23 +55,26 @@ bool Leukocyte::move() {
 
 void Leukocyte::operator()() {
 	while (true) {
+		unique_lock<mutex> lckb {beatmtx};
+		beatcv.wait(lckb);
+		lckb.unlock();
+
+		{
+			lock_guard<mutex> lcke {endThreadsMtx};
+			if (endThreads) break;
+		}
+
 		bool veinEnd = move();
+
 		{
 			lock_guard<mutex> lckm {modifyableMtx};
-			if (nextDirection >= 2 && entranceLck) {
+			if (nextDirection > 1 && entranceLck) {
 					entranceLck.unlock();
 					entranceLck.release();
 			}
 		}
 
 		if (veinEnd) destination->interact(*this);
-		
-		this_thread::sleep_for(chrono::milliseconds(500));
-
-		{
-			lock_guard<mutex> lcke {endThreadsMtx};
-			if (endThreads) break;
-		}
 	}
 
 	if (entranceLck) {
@@ -90,7 +93,7 @@ void Leukocyte::draw() {
 }
 
 Vein* Leukocyte::getVein() {
-	lock_guard<mutex> lcka {modifyableMtx};
+	lock_guard<mutex> lckm {modifyableMtx};
 	return vein;
 }
 

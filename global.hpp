@@ -3,6 +3,7 @@
 #include <ncurses.h>
 #include <stdio.h>
 #include <mutex>
+#include <condition_variable>
 #include <random>
 #include <thread>
 #include <memory>
@@ -34,6 +35,9 @@ const int TASK_TIME_UB = 3500;
 
 mutex endThreadsMtx;
 bool endThreads = false;
+
+condition_variable beatcv;
+mutex beatmtx;
 
 mutex printMtx;		//do synchronizacji pisania na ekran
 

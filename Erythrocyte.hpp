@@ -68,24 +68,26 @@ bool Erythrocyte::move() {
 
 void Erythrocyte::operator()() {
 	while (true) {
-		bool veinEnd = move();
-		{
-			lock_guard<mutex> lckm {modifyableMtx};
-			if (nextDirection >= 2 && entranceLck) {
-					entranceLck.unlock();
-					entranceLck.release();
-			}
-		}
-		
-
-		if (veinEnd) destination->interact(*this);
-		
-		this_thread::sleep_for(chrono::milliseconds(500));
+		unique_lock<mutex> lckb {beatmtx};
+		beatcv.wait(lckb);
+		lckb.unlock();
 
 		{
 			lock_guard<mutex> lcke {endThreadsMtx};
 			if (endThreads) break;
 		}
+
+		bool veinEnd = move();
+
+		{
+			lock_guard<mutex> lckm {modifyableMtx};
+			if (nextDirection > 1 && entranceLck) {
+					entranceLck.unlock();
+					entranceLck.release();
+			}
+		}
+
+		if (veinEnd) destination->interact(*this);
 	}
 
 	if (entranceLck) {

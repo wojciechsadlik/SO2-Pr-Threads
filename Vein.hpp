@@ -19,6 +19,7 @@ public:
 	int getId();
 	void setDestination(Destination* destination);
 	Destination* getDestination();
+	bool isAvailable();
 	void draw();
 };
 
@@ -67,6 +68,14 @@ void Vein::setDestination(Destination* destination) {
 Destination* Vein::getDestination() {
 	lock_guard<mutex> lckd {dataAccessMtx};
 	return destination;
+}
+
+bool Vein::isAvailable() {
+	unique_lock<mutex> lck {entranceMtx, try_to_lock};
+	if (lck)
+		return true;
+	else
+		return false;
 }
 
 void Vein::draw() {

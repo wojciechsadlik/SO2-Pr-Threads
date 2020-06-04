@@ -98,36 +98,61 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 	unique_lock<mutex> lckLeukL{*leukListMtx};
 	auto itl = leukocytes->begin();
 	while(true) {
-		if (!lckErL) lckErL.lock();
-		if (!lckLeukL) lckLeukL.lock();
-		if (ite == erythrocytes->end() && itl == leukocytes->end()) break;
-
+		if (outUpV->isAvailable()) {
+			if (!lckErL) lckErL.lock();
+			if (!lckLeukL) lckLeukL.lock();
+			if (ite == erythrocytes->end() && itl == leukocytes->end()) break;
 		
-		if (random01() <= erProb && ite != erythrocytes->end()) {
-			Erythrocyte* er = &(*ite);
-			++ite;
-			lckErL.unlock();
-			lckLeukL.unlock();
-			addBloodCell(*er);
-		} else if (itl != leukocytes->end()) {
-			Leukocyte* leuk = &(*itl);
-			++itl;
-			lckErL.unlock();
-			lckLeukL.unlock();
-			addBloodCell(*leuk);
+			if ((random01() <= erProb || itl == leukocytes->end()) && ite != erythrocytes->end()) {
+				Erythrocyte* er = &(*ite);
+				++ite;
+				lckErL.unlock();
+				lckLeukL.unlock();
+				addBloodCell(*er);
+			} else if (itl != leukocytes->end()) {
+				Leukocyte* leuk = &(*itl);
+				++itl;
+				lckErL.unlock();
+				lckLeukL.unlock();
+				addBloodCell(*leuk);
+			}
 		}
-		
+
+		if (lckErL) lckErL.unlock();
+		if (lckLeukL) lckLeukL.unlock();
+
+		beatcv.notify_all();
+		this_thread::sleep_for(chrono::milliseconds(500));
+
 		{
 			lock_guard<mutex> lcke {endThreadsMtx};
 			if (endThreads) break;
 		}
+		
 	}
 	
 	if (lckErL) lckErL.unlock();
 	if (lckLeukL) lckLeukL.unlock();
 
 	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
-	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "loading ended");
+	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "beating");
+	
+	while(true) {
+		{
+			lock_guard<mutex> lcke {endThreadsMtx};
+			if (endThreads) break;
+		}
+		beatcv.notify_all();
+
+		synch_mvwprintw(win, 3, WIN_COLS / 2 - 1, Color::DEFAULT, "***");
+		this_thread::sleep_for(chrono::milliseconds(250));
+		synch_wClearLine(win, 3, 1, WIN_COLS - 1);
+		this_thread::sleep_for(chrono::milliseconds(250));
+	}
+	beatcv.notify_all();
+
+	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
+	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "ended");
 }
 
 Coords Heart::outUpVPos() {
