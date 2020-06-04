@@ -12,9 +12,9 @@ class Lungs : public Destination{
 	const int WIN_LINES {6};
 	const int WIN_COLS {17};
 	WINDOW* win {nullptr};
-	vector<unique_ptr<Oxygen>> oxygen;
+	list<unique_ptr<Oxygen>> oxygen;
 	mutex oxygenMtx;
-	size_t capacity {16};	// maksymalna liczba jednostek tlenu
+	size_t capacity {15};	// maksymalna liczba jednostek tlenu
 	Vein* vIn {nullptr};
 	Vein* vOut {nullptr};
 

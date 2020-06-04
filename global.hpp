@@ -9,6 +9,7 @@
 #include <memory>
 #include <chrono>
 #include <vector>
+#include <list>
 #include <forward_list>
 #include "Coords.hpp"
 using namespace std;
