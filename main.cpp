@@ -129,9 +129,6 @@ int main(int argc, char* argv[])
 		endThreads = true;
 	}
 
-	heartThd.join();
-	heart.refresh();
-
 	for (auto& erThd : erThds) {
 		erThd.join();
 		refresh();
@@ -143,13 +140,16 @@ int main(int argc, char* argv[])
 	}
 
 	vLH.draw();
-		vHL.draw();
-		vHF.draw();
-		vFC.draw();
-		vCJ.draw();
-		vJH.draw();
-		vFC2.draw();
-		vC2J.draw();
+	vHL.draw();
+	vHF.draw();
+	vFC.draw();
+	vCJ.draw();
+	vJH.draw();
+	vFC2.draw();
+	vC2J.draw();
+	
+	heartThd.join();
+	heart.refresh();
 
 	lungsThd.join();
 	lungs.refresh();
