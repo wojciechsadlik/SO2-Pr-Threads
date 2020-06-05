@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 
 	Vein vCJ{cell1.vOutPos(), "ll"};
 
-	Vein vJH{vCJ.getEndPos(), "uuuuuurr"};
+	Vein vJH{vCJ.getEndPos(), "uuuuuurrr"};
 	Junction junction{&vJH};
 	vJH.setDestination(&heart);
 	vCJ.setDestination(&junction);
@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
 	vJH.draw();
 	vFC2.draw();
 	vC2J.draw();
-	
+
 	heartThd.join();
 	heart.refresh();
 
