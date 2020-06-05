@@ -133,7 +133,7 @@ void Cell::processOxygen() {
 				synch_mvwprintw(win, 1, 1, Color::CELL_ILL, "processing");	//oznacz innym kolorem
 				if (!leukocyteOrdered) {						//jezeli nie zamowiono leukocytu
 					taskTime /= 2;								//skroc czas przetwarzania
-					lckd.unlock();								//zeby mozna bylo zamowic
+					lckd.unlock();								//odblokowac accessMtx, zeby mozna bylo zamowic
 					orderLeukocyte();							//zamow leukocyt
 				}
 			} else {
