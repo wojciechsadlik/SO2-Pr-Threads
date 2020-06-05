@@ -12,7 +12,7 @@ class Leukocyte {
 	Destination* destination {nullptr};
 	int nextDirection {0};
 	unique_lock<mutex> entranceLck;
-	mutex modifyableMtx;
+	mutex accessMtx;
 
 public:
 	Leukocyte() = default;
@@ -31,7 +31,7 @@ Leukocyte::Leukocyte(int id): id(id){
 }
 
 bool Leukocyte::move() {
-	lock_guard<mutex> lckm {modifyableMtx};
+	lock_guard<mutex> lckm {accessMtx};
 	bool end = false;
 	if (vein != nullptr) {
 		char c = '?';
@@ -62,7 +62,7 @@ void Leukocyte::operator()() {
 		bool veinEnd = move();
 
 		{
-			lock_guard<mutex> lckm {modifyableMtx};
+			lock_guard<mutex> lckm {accessMtx};
 			if (nextDirection > 1 && entranceLck) {
 					entranceLck.unlock();
 			}
@@ -84,19 +84,19 @@ void Leukocyte::operator()() {
 }
 
 void Leukocyte::draw() {
-	unique_lock<mutex> lckm {modifyableMtx, try_to_lock};
+	unique_lock<mutex> lckm {accessMtx, try_to_lock};
 	if (lckm && vein != nullptr) {
 		synch_mvwprintw(stdscr, pos.line, pos.col, Color::LEUKOCYTE, "%02d", id);
 	}
 }
 
 Vein* Leukocyte::getVein() {
-	lock_guard<mutex> lckm {modifyableMtx};
+	lock_guard<mutex> lckm {accessMtx};
 	return vein;
 }
 
 void Leukocyte::setVein(Vein* vein) {
-	lock_guard<mutex> lckm {modifyableMtx};
+	lock_guard<mutex> lckm {accessMtx};
 
 	entranceLck = unique_lock<mutex> {vein->entranceMtx};
 	this->vein = vein;
@@ -106,11 +106,11 @@ void Leukocyte::setVein(Vein* vein) {
 }
 
 void Leukocyte::setPos(Coords pos) {
-	lock_guard<mutex> lckm {modifyableMtx};
+	lock_guard<mutex> lckm {accessMtx};
 	this->pos = pos;
 }
 
 void Leukocyte::setDestination(Destination* destination) {
-	lock_guard<mutex> lckm {modifyableMtx};
+	lock_guard<mutex> lckm {accessMtx};
 	this->destination = destination;
 }

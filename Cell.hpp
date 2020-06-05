@@ -15,7 +15,7 @@ class Cell: public Destination {
 	Vein* vIn {nullptr};
 	Vein* vOut {nullptr};
 	unique_ptr<Oxygen> oxygen {nullptr};
-	mutex modifyableMtx;
+	mutex accessMtx;
 	list<Fork*> forks;
 	bool leukocyteOrdered {false};
 
@@ -51,24 +51,24 @@ Cell::~Cell() {
 }
 
 int Cell::getId() {
-	lock_guard<mutex> lckd {modifyableMtx};
+	lock_guard<mutex> lckd {accessMtx};
 	return id;
 }
 
 void Cell::setForks(list<Fork*> forks) {
-	lock_guard<mutex> lckd {modifyableMtx};
+	lock_guard<mutex> lckd {accessMtx};
 	this->forks = forks;
 }
 
 void Cell::orderErythrocyte() {
-	lock_guard<mutex> lckd {modifyableMtx};
+	lock_guard<mutex> lckd {accessMtx};
 	for (auto f : forks) {
 		f->orderErythrocyte(id);
 	}
 }
 
 void Cell::orderLeukocyte() {
-	lock_guard<mutex> lckd {modifyableMtx};
+	lock_guard<mutex> lckd {accessMtx};
 	for (auto f : forks) {
 		f->orderLeukocyte(id);
 	}
@@ -82,7 +82,7 @@ void Cell::waitForOxygen() {
 	
 	while (true) {
 		{
-			lock_guard<mutex> lckd {modifyableMtx};
+			lock_guard<mutex> lckd {accessMtx};
 			if (oxygen != nullptr) break;
 		}
 		{
@@ -118,7 +118,7 @@ void Cell::processOxygen() {
 	}
 	for (int i = 1; i < WIN_COLS - 1; ++i) {					//pasek postepu
 		{
-			unique_lock<mutex> lckd {modifyableMtx};
+			unique_lock<mutex> lckd {accessMtx};
 			lock_guard<mutex> lcki {illnessMtx};
 			if (oxygen != nullptr) {
 				synch_wClearLine(win, 2, 1, WIN_COLS - 1);
@@ -167,13 +167,13 @@ void Cell::operator()() {
 }
 
 void Cell::interact(Erythrocyte& erythrocyte) {
-	lock_guard<mutex> lckd {modifyableMtx};
+	lock_guard<mutex> lckd {accessMtx};
 	oxygen = erythrocyte.giveOxygen();
 	erythrocyte.setVein(vOut);
 }
 
 void Cell::interact(Leukocyte& leukocyte) {
-	lock_guard<mutex> lckd {modifyableMtx};
+	lock_guard<mutex> lckd {accessMtx};
 	{
 		lock_guard<mutex> lck {illnessMtx};
 		if (illness) {
@@ -186,13 +186,13 @@ void Cell::interact(Leukocyte& leukocyte) {
 }
 
 void Cell::setVeins(Vein* vIn, Vein* vOut) {
-	lock_guard<mutex> lckd {modifyableMtx};
+	lock_guard<mutex> lckd {accessMtx};
 	this->vIn = vIn;
 	this->vOut = vOut;
 }
 
 Coords Cell::vOutPos() {
-	lock_guard<mutex> lckd {modifyableMtx};
+	lock_guard<mutex> lckd {accessMtx};
 	return Coords{pos.line + 2, pos.col - 2};
 }
 

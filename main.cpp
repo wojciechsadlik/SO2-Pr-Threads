@@ -132,6 +132,16 @@ int main(int argc, char* argv[])
 	heartThd.join();
 	heart.refresh();
 
+	for (auto& erThd : erThds) {
+		erThd.join();
+		refresh();
+	}
+
+	for (auto& leukThd : leukThds) {
+		leukThd.join();
+		refresh();
+	}
+
 	lungsThd.join();
 	lungs.refresh();
 
@@ -147,15 +157,6 @@ int main(int argc, char* argv[])
 	bacteria2Thd.join();
 	bacteria2.refresh();
 
-	for (auto& erThd : erThds) {
-		erThd.join();
-		refresh();
-	}
-
-	for (auto& leukThd : leukThds) {
-		leukThd.join();
-		refresh();
-	}
 
 	this_thread::sleep_for(chrono::seconds{2});
 

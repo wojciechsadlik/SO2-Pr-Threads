@@ -15,7 +15,7 @@ class Heart : public Destination {
 	Vein* inDownV {nullptr};
 	Vein* outUpV {nullptr};
 	Vein* outDownV {nullptr};
-	mutex modifyableMtx;
+	mutex accessMtx;
 	const int PERIOD {500};
 
 public:
@@ -44,7 +44,7 @@ Heart::~Heart() {
 }
 
 void Heart::setVeins(Vein* inUpV, Vein* inDownV, Vein* outUpV, Vein* outDownV){
-	lock_guard<mutex> lckm{modifyableMtx};
+	lock_guard<mutex> lckm{accessMtx};
 	this->inUpV = inUpV;
 	this->inDownV = inDownV;
 	this->outUpV = outUpV;
@@ -58,24 +58,24 @@ void Heart::refresh() {
 }
 
 void Heart::addBloodCell(Erythrocyte& erythrocyte) {
-	lock_guard<mutex> lckm{modifyableMtx};
+	lock_guard<mutex> lckm{accessMtx};
 	erythrocyte.setVein(outUpV);
 }
 
 void Heart::addBloodCell(Leukocyte& leukocyte) {
-	lock_guard<mutex> lckm{modifyableMtx};
+	lock_guard<mutex> lckm{accessMtx};
 	leukocyte.setVein(outUpV);
 }
 
 void Heart::interact(Erythrocyte& erythrocyte) {
-	lock_guard<mutex> lckm{modifyableMtx};
+	lock_guard<mutex> lckm{accessMtx};
 	Vein* vein = erythrocyte.getVein();
 	if (vein == inUpV) erythrocyte.setVein(outDownV);
 	else erythrocyte.setVein(outUpV);
 }
 
 void Heart::interact(Leukocyte& leukocyte) {
-	lock_guard<mutex> lckm{modifyableMtx};
+	lock_guard<mutex> lckm{accessMtx};
 	Vein* vein = leukocyte.getVein();
 	if (vein == inUpV) leukocyte.setVein(outDownV);
 	else leukocyte.setVein(outUpV);
@@ -159,11 +159,11 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 }
 
 Coords Heart::outUpVPos() {
-	lock_guard<mutex> lckm{modifyableMtx};
+	lock_guard<mutex> lckm{accessMtx};
 	return Coords{pos.line + 1, pos.col + WIN_COLS};
 }
 
 Coords Heart::outDownVPos() {
-	lock_guard<mutex> lckm{modifyableMtx};
+	lock_guard<mutex> lckm{accessMtx};
 	return Coords{pos.line + 4, pos.col + WIN_COLS};
 }

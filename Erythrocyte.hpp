@@ -13,7 +13,7 @@ class Erythrocyte {
 	Destination* destination {nullptr};
 	int nextDirection {0};
 	unique_lock<mutex> entranceLck;
-	mutex modifyableMtx;
+	mutex accessMtx;
 
 public:
 	Erythrocyte() = default;
@@ -34,17 +34,17 @@ Erythrocyte::Erythrocyte(int id): id(id){
 }
 
 void Erythrocyte::takeOxygen(unique_ptr<Oxygen> oxygen) {
-	lock_guard<mutex> lckm {modifyableMtx};
+	lock_guard<mutex> lckm {accessMtx};
 	this->oxygen = std::move(oxygen);
 }
 
 unique_ptr<Oxygen> Erythrocyte::giveOxygen() {
-	lock_guard<mutex> lckm {modifyableMtx};
+	lock_guard<mutex> lckm {accessMtx};
 	return std::move(oxygen);
 }
 
 bool Erythrocyte::move() {
-	lock_guard<mutex> lckm {modifyableMtx};
+	lock_guard<mutex> lckm {accessMtx};
 	bool end = false;
 	if (vein != nullptr) {
 		char c = '?';
@@ -75,7 +75,7 @@ void Erythrocyte::operator()() {
 		bool veinEnd = move();
 
 		{
-			lock_guard<mutex> lckm {modifyableMtx};
+			lock_guard<mutex> lckm {accessMtx};
 			if (nextDirection > 1 && entranceLck) {
 					entranceLck.unlock();
 			}
@@ -97,7 +97,7 @@ void Erythrocyte::operator()() {
 }
 
 void Erythrocyte::draw() {
-	unique_lock<mutex> lckm {modifyableMtx, try_to_lock};
+	unique_lock<mutex> lckm {accessMtx, try_to_lock};
 	if (lckm && vein != nullptr) {
 		if (oxygen == nullptr)
 			synch_mvwprintw(stdscr, pos.line, pos.col, Color::ERYTHROCYTE_NO, "%02d", id);
@@ -107,12 +107,12 @@ void Erythrocyte::draw() {
 }
 
 Vein* Erythrocyte::getVein() {
-	lock_guard<mutex> lcka {modifyableMtx};
+	lock_guard<mutex> lcka {accessMtx};
 	return vein;
 }
 
 void Erythrocyte::setVein(Vein* vein) {
-	lock_guard<mutex> lckm {modifyableMtx};
+	lock_guard<mutex> lckm {accessMtx};
 
 	entranceLck = unique_lock<mutex> {vein->entranceMtx};
 	this->vein = vein;
@@ -122,11 +122,11 @@ void Erythrocyte::setVein(Vein* vein) {
 }
 
 void Erythrocyte::setPos(Coords pos) {
-	lock_guard<mutex> lckm {modifyableMtx};
+	lock_guard<mutex> lckm {accessMtx};
 	this->pos = pos;
 }
 
 void Erythrocyte::setDestination(Destination* destination) {
-	lock_guard<mutex> lckm {modifyableMtx};
+	lock_guard<mutex> lckm {accessMtx};
 	this->destination = destination;
 }
