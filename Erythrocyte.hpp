@@ -69,7 +69,7 @@ bool Erythrocyte::move() {
 void Erythrocyte::operator()() {
 	while (true) {
 		unique_lock<mutex> lckb {beatmtx};
-		beatcv.wait(lckb);
+		beatcv.wait(lckb);					//czeka na sygnal z serca
 		lckb.unlock();
 
 		bool veinEnd = move();

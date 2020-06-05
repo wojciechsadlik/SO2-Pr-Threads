@@ -46,7 +46,7 @@ void Bacteria::attack() {
 	synch_mvwprintw(win, 0, 1, Color::BACTERIA_ATTACK, "bacteria%d: attacking", id);
 	unique_lock<mutex> lck {cell->illnessMtx};
 	cell->illness = true;
-	cell->illnesscv.wait(lck);
+	cell->illnesscv.wait(lck);			//czeka na sygnal o przyjsciu leukocytu
 	synch_wClearLine(win, 0, 1, COLS);
 }
 

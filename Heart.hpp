@@ -124,7 +124,7 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 		if (lckErL) lckErL.unlock();
 		if (lckLeukL) lckLeukL.unlock();
 
-		beatcv.notify_all();
+		beatcv.notify_all();	//sygnal ruchu dla krwinek
 		this_thread::sleep_for(chrono::milliseconds(PERIOD));
 
 		{
@@ -145,14 +145,15 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 			lock_guard<mutex> lcke {endThreadsMtx};
 			if (endThreads) break;
 		}
-		beatcv.notify_all();
+		beatcv.notify_all();	//sygnal ruchu dla krwinek
 
 		synch_mvwprintw(win, 3, WIN_COLS / 2 - 1, Color::DEFAULT, "***");
 		this_thread::sleep_for(chrono::milliseconds(PERIOD / 2));
 		synch_wClearLine(win, 3, 1, WIN_COLS - 1);
 		this_thread::sleep_for(chrono::milliseconds(PERIOD / 2));
 	}
-	beatcv.notify_all();
+
+	beatcv.notify_all();		//sygnal ruchu dla krwinek
 
 	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "ended");

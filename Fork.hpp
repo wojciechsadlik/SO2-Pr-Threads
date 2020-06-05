@@ -45,8 +45,8 @@ void Fork::orderLeukocyte(int id) {
 
 void Fork::interact(Erythrocyte& erythrocyte) {
 	lock_guard<mutex> lck{accessMtx};
-	if (!erythrocyteOrders.empty()) {
-		erythrocyte.setVein(vOuts[erythrocyteOrders.front()]);
+	if (!erythrocyteOrders.empty()) {							//jezeli sa zamowienia na erytrocyt
+		erythrocyte.setVein(vOuts[erythrocyteOrders.front()]);	//to ustaw go na wyjscie pierwszego zamowienia
 		erythrocyteOrders.pop();
 	} else {
 		erythrocyte.setVein(vOuts[getRandomKey()]);
@@ -55,8 +55,8 @@ void Fork::interact(Erythrocyte& erythrocyte) {
 
 void Fork::interact(Leukocyte& leukocyte) {
 	lock_guard<mutex> lck{accessMtx};
-	if (!leukocyteOrders.empty()) {
-		leukocyte.setVein(vOuts[leukocyteOrders.front()]);
+	if (!leukocyteOrders.empty()) {							//jezeli sa zamowienia na leukocyt
+		leukocyte.setVein(vOuts[leukocyteOrders.front()]);	//to ustaw go na wyjscie pierwszego zamowienia
 		leukocyteOrders.pop();
 	} else {
 		leukocyte.setVein(vOuts[getRandomKey()]);

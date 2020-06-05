@@ -40,11 +40,11 @@ enum Color	{DEFAULT,
 const int TASK_TIME_LB = 2500;
 const int TASK_TIME_UB = 3500;
 
-mutex endThreadsMtx;
-bool endThreads = false;
+mutex endThreadsMtx;		//do zakonczenia watkow
+bool endThreads = false;	//do zakonczenia watkow
 
-condition_variable beatcv;
-mutex beatmtx;
+condition_variable beatcv;	//do synchronizowania ruchu krwinek w takcie bicia serca
+mutex beatmtx;				//do synchronizowania ruchu krwinek w takcie bicia serca
 
 mutex printMtx;		//do synchronizacji pisania na ekran
 
