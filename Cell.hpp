@@ -86,11 +86,11 @@ void Cell::waitForOxygen() {
 			if (oxygen != nullptr) break;
 		}
 		{
-			lock_guard<mutex> lck {illnessMtx};
-			if (illness) {
+			lock_guard<mutex> lck {illnessMtx};		//zeby sprawdzic czy bakterie zaatakowaly
+			if (illness) {							//jezeli zaatakowaly to wypisz innym kolorem
 				synch_mvwprintw(win, 1, 1, Color::CELL_ILL, "waiting");
-				if (!leukocyteOrdered)
-					orderLeukocyte();
+				if (!leukocyteOrdered)				//jezeli nie zamowiono leukocytu
+					orderLeukocyte();				//to zamow leukocyt
 			}
 			else
 				synch_mvwprintw(win, 1, 1, Color::DEFAULT, "waiting");
@@ -118,23 +118,23 @@ void Cell::processOxygen() {
 	}
 	for (int i = 1; i < WIN_COLS - 1; ++i) {					//pasek postepu
 		{
-			unique_lock<mutex> lckd {accessMtx};
+			unique_lock<mutex> lckd {accessMtx};				//zeby mozna bylo odblokowac przed zamowieniem leukocytus
 			lock_guard<mutex> lcki {illnessMtx};
-			if (oxygen != nullptr) {
+			if (oxygen != nullptr) {							//jezeli w trakcie przetwarzania otrzymano nowy tlen
 				synch_wClearLine(win, 2, 1, WIN_COLS - 1);
-				i = 1;
+				i = 1;											//resetuj stan przetwarzania
 				oxygen.release();
 				taskTime = randomTime(TASK_TIME_LB, TASK_TIME_UB);
 				if (illness)
 					taskTime /= 2;
 			}
 			
-			if (illness) {
-				synch_mvwprintw(win, 1, 1, Color::CELL_ILL, "processing");
-				if (!leukocyteOrdered) {
-					taskTime /= 2;
-					lckd.unlock();
-					orderLeukocyte();
+			if (illness) {										//jezeli zaatakowaly bakterie
+				synch_mvwprintw(win, 1, 1, Color::CELL_ILL, "processing");	//oznacz innym kolorem
+				if (!leukocyteOrdered) {						//jezeli nie zamowiono leukocytu
+					taskTime /= 2;								//skroc czas przetwarzania
+					lckd.unlock();								//zeby mozna bylo zamowic
+					orderLeukocyte();							//zamow leukocyt
 				}
 			} else {
 				synch_mvwprintw(win, 1, 1, Color::DEFAULT, "processing");
@@ -159,7 +159,7 @@ void Cell::operator()() {
 		if (endThreads) break;
 	}
 
-	illnesscv.notify_one();
+	illnesscv.notify_one();		//jezeli koniec to powiadom czekajace bakterie, zeby mogly sie zakonczyc
 
 	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
 	synch_wClearLine(win, 2, 1, WIN_COLS - 1);
@@ -175,11 +175,11 @@ void Cell::interact(Erythrocyte& erythrocyte) {
 void Cell::interact(Leukocyte& leukocyte) {
 	lock_guard<mutex> lckd {accessMtx};
 	{
-		lock_guard<mutex> lck {illnessMtx};
-		if (illness) {
-			illness = false;
-			illnesscv.notify_one();
-			leukocyteOrdered = false;
+		lock_guard<mutex> lck {illnessMtx};		//zeby mozna bylo sprawdzic czy bakterie atakuja
+		if (illness) {							//jezeli tak
+			illness = false;					//to wylecz
+			illnesscv.notify_one();				//i powiadom bakterie, ze maja skonczyc
+			leukocyteOrdered = false;			//zresetuj stan zamowienia
 		}
 	}
 	leukocyte.setVein(vOut);
