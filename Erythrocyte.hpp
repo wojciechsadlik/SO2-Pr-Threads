@@ -114,7 +114,16 @@ Vein* Erythrocyte::getVein() {
 void Erythrocyte::setVein(Vein* vein) {
 	lock_guard<mutex> lckm {accessMtx};
 
-	entranceLck = unique_lock<mutex> {vein->entranceMtx};
+	this->vein = nullptr;
+	entranceLck = unique_lock<mutex> {vein->entranceMtx, try_to_lock};
+	while(!entranceLck) {
+		entranceLck.try_lock();
+		{
+			lock_guard<mutex> lcke {endThreadsMtx};
+			if (endThreads) return;
+		}
+	}
+
 	this->vein = vein;
 	this->pos = vein->getStartPos();
 	this->destination = vein->getDestination();

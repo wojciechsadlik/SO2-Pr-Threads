@@ -142,6 +142,15 @@ int main(int argc, char* argv[])
 		refresh();
 	}
 
+	vLH.draw();
+		vHL.draw();
+		vHF.draw();
+		vFC.draw();
+		vCJ.draw();
+		vJH.draw();
+		vFC2.draw();
+		vC2J.draw();
+
 	lungsThd.join();
 	lungs.refresh();
 
