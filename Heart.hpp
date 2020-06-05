@@ -98,11 +98,12 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 	auto ite = erythrocytes->begin();
 	unique_lock<mutex> lckLeukL{*leukListMtx};
 	auto itl = leukocytes->begin();
-	while(true) {
-		if (outUpV->isAvailable()) {
+	while(true) {	//petla dodawania krwinek
+		if (outUpV->isAvailable()) {	//jezeli zyla wyjsciowa jest wolna - mozna dodac krwinke
 			if (!lckErL) lckErL.lock();
 			if (!lckLeukL) lckLeukL.lock();
-			if (ite == erythrocytes->end() && itl == leukocytes->end()) break;
+			if (ite == erythrocytes->end() && itl == leukocytes->end()) break;	//jezeli koniec tablic krwinek
+																				//zakoncz etap dodawania
 
 			if ((random01() <= erProb || itl == leukocytes->end()) && ite != erythrocytes->end()) {
 				Erythrocyte* er = &(*ite);
@@ -140,7 +141,7 @@ void Heart::operator()(forward_list<Erythrocyte>* erythrocytes, mutex* erListMtx
 	synch_wClearLine(win, 1, 1, WIN_COLS - 1);
 	synch_mvwprintw(win, 1, 1, Color::DEFAULT, "beating");
 	
-	while(true) {
+	while(true) {	//petla bicia serca
 		{
 			lock_guard<mutex> lcke {endThreadsMtx};
 			if (endThreads) break;
