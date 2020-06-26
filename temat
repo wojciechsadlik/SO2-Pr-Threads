@@ -4,6 +4,7 @@ Temat
 Układ krwionośny i odpornościowy:
 	- Wątki:
 		- płuca - cykle wdech / wydech - pobieranie tlenu i przekazywanie go erytrocytom
+		- serce - porusza krwinki
 		- erytrocyty - transport tlenu z płuc do komórek
 		- leukocyty - "patrolowanie" organizmu w poszukiwaniu bakterii atakujących komórki
 					- pomoc komórce zaatakowanej przez bakterię
@@ -15,7 +16,8 @@ Układ krwionośny i odpornościowy:
 		- żyły - ograniczona liczba krwinek w przekroju poprzecznym, krwinki nie mogą ze sobą kolidować
 				- mają wymusić rozproszenie krwinek w całym układzie
 	- Rząd wielkości liczby wystąpień wątków:
-		- płuca - jeden 
+		- płuca - jeden
+		- serce - jeden
 		- erytrocyty - kilka - kilkanaście 
 		- leukocyty - kilka 
 		- bakterie - kilka
