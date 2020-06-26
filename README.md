@@ -23,8 +23,9 @@ Problem synchronizacji wątków w C++.
 	- bakterie - kilka
 	- komórki - kilka
 - Opis systemu:
-System składa się z płuc, komórek i żył. Żyły łączą płuca i komórki, tworząc zamknięty obieg cykliczny.
-Każda komórka wymaga regularnych dostaw tlenu z płuc.
-Za transport tlenu odpowiadają erytrocyty, które krążą w żyłach.
-Każdy erytrocyt może pobrać jendostkę tlenu z płuc i przekazać ją komórce.
-Komórki w układzie mogą być atakowane przez bakterie - wymaga to interwencji leukocytów, które krążą w żyłach razem z erytrocytami.
+	- System składa się z płuc, komórek i żył.
+	- Żyły łączą płuca i komórki, tworząc zamknięty obieg cykliczny.
+	- Każda komórka wymaga regularnych dostaw tlenu z płuc.
+	- Za transport tlenu odpowiadają erytrocyty, które krążą w żyłach.
+	- Każdy erytrocyt może pobrać jendostkę tlenu z płuc i przekazać ją komórce.
+	- Komórki w układzie mogą być atakowane przez bakterie - wymaga to interwencji leukocytów, które krążą w żyłach razem z erytrocytami.
