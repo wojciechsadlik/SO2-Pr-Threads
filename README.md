@@ -1,31 +1,32 @@
-# SO2_Pr_Threads
-Problem synchronizacji wątków w C++.
+# SO2-Pr-Threads
+Small project to explore the problems of threads' synchonization with C++.
+Threads' actions are visualized using ncurses.
 
-# Temat: Układ Krwionośny.
-- Wątki:
-	- płuca - cykle wdech / wydech - pobieranie tlenu i przekazywanie go erytrocytom
-	- serce - porusza krwinki
-	- erytrocyty - transport tlenu z płuc do komórek
-	- leukocyty - "patrolowanie" organizmu w poszukiwaniu bakterii atakujących komórki
-				- pomoc komórce zaatakowanej przez bakterię
-	- bakterie - losowo atakują komórki
-	- komórki - do każdej komórki muszą regularnie trafiać erytrocyty z tlenem,
-			- mogą być atakowane przez bakterie, wtedy muszą trafić do nich leukocyty w celu obrony
-- Zasoby:
-	- tlen - jedna jednostka tlenu z płuc może być zabrana przez jeden erytrocyt
-	- żyły - ograniczona liczba krwinek w przekroju poprzecznym, krwinki nie mogą ze sobą kolidować
-			- mają wymusić rozproszenie krwinek w całym układzie
-- Rząd wielkości liczby wystąpień wątków:
-	- płuca - jeden
-	- serce - jeden
-	- erytrocyty - kilka - kilkanaście 
-	- leukocyty - kilka 
-	- bakterie - kilka
-	- komórki - kilka
-- Opis systemu:
-	- System składa się z płuc, komórek i żył.
-	- Żyły łączą płuca i komórki, tworząc zamknięty obieg cykliczny.
-	- Każda komórka wymaga regularnych dostaw tlenu z płuc.
-	- Za transport tlenu odpowiadają erytrocyty, które krążą w żyłach.
-	- Każdy erytrocyt może pobrać jendostkę tlenu z płuc i przekazać ją komórce.
-	- Komórki w układzie mogą być atakowane przez bakterie - wymaga to interwencji leukocytów, które krążą w żyłach razem z erytrocytami.
+# Topic: Cardiovascular system
+- Threads:
+	- lungs - inhale / exhale cycles - generating oxygen and transferring it to erythrocytes
+	- heart - moves blood cells
+	- erythrocytes - oxygen transportation from lungs to body cells
+	- leukocytes - "patrolling" body to fight bacteria
+				- helping body cell attacked by a bacteria
+	- bacteria - randomly attack body cells
+	- body cells - to each body cell eruthrocytes with oxygen must arrive
+			- can be attacked by bacteria, then leukocytes must arrive
+- Resources:
+	- oxygen - one unit of oxygen can be taken from lungs by single erythrocyte
+	- blood vessels - constrained number of blood cells - they must not collide
+			- forces blood cells dispersion in the vascular system
+- Number of threads:
+	- lungs - one
+	- heart - one
+	- erythrocytes - a few
+	- leukocyty - a few
+	- bakterie - a few
+	- komórki - a few
+- System descriptions:
+	- System is made of lungs, heart and vessels.
+	- Vessels are connecting lungs with body cells to create closed circulatory cycle.
+	- Each body cell require regular oxygen supply.
+	- Erythrocytes, which are cirulating in vessels, are responsible for the oxygen transport.
+	- Each erythrocyte can take one unit of oxygen from lungs and transfer it to a single body cell.
+	- Body cells can be attacked by bacteria - it requires the intervention of leukocytes which are circulating in the vessels with erythrocytes.
