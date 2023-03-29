@@ -20,9 +20,9 @@ Threads' actions are visualized using ncurses.
 	- lungs - one
 	- heart - one
 	- erythrocytes - a few
-	- leukocyty - a few
-	- bakterie - a few
-	- komórki - a few
+	- leukocytes - a few
+	- bacteria - a few
+	- body cells - a few
 - The system description:
 	- System is made of lungs, heart and vessels.
 	- Vessels are connecting lungs with body cells to create closed circulatory cycle.
